@@ -21,7 +21,7 @@ else
             Автор: @_story.Author?.UserName • @_story.CreatedAt:dd.MM.yyyy
         </MudText>
         
-        <MudRating Size="Size.Large" ReadOnly="true" Value="@_story.BookRating" Class="my-2"/>
+        <MudRating Size="Size.Large" Disabled="true" SelectedValue="@_story.BookRating" Class="my-2"/>
         
         <MudText Class="mt-2">@_story.ShortDescription</MudText>
         <MudText Class="mt-2">@_story.FullDescription</MudText>

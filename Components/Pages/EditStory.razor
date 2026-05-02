@@ -40,7 +40,7 @@ else
                           Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" Lines="6"/>
             
             <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
-            <MudRating @bind-Value="_formModel.BookRating" HoveredValue="@_hoveredRating"/>
+            <MudRating @bind-SelectedValue="_formModel.BookRating" HoveredValue="@_hoveredRating"/>
             
             <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" 
