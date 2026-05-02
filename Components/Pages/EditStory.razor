@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @using BookManagement.Models
 @using BookManagement.Services
+@using System.ComponentModel.DataAnnotations
 @inject IStoryService StoryService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
@@ -24,42 +25,85 @@ else
     <MudText Typo="Typo.h4" Class="mb-4">✏️ Редактировать рассказ</MudText>
 
     <MudPaper Elevation="2" Class="pa-6">
-        <EditForm Model="@_formModel" FormName="EditStoryForm" OnValidSubmit="HandleSubmit">
-            <DataAnnotationsValidator />
-            
+        <MudForm @ref="_form" Model="@_formModel" @bind-IsValid="@_isValid" @bind-Errors="@_errors">
             <MudTextField T="string" @bind-Value="_formModel.BookName" 
-                          Label="Название книги" Required="true"
-                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
+                          Label="Название книги" 
+                          Required="true"
+                          RequiredError="Введите название книги"
+                          HelperText="Например: Мастер и Маргарита"
+                          Margin="Margin.Dense" 
+                          Variant="Variant.Outlined" 
+                          FullWidth="true"
+                          For="@(() => _formModel.BookName)"/>
             
             <MudTextField T="string" @bind-Value="_formModel.ShortDescription" 
-                          Label="Короткое описание" Required="true" Counter="200"
-                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" Lines="2"/>
+                          Label="Короткое описание" 
+                          Required="true" 
+                          RequiredError="Введите короткое описание"
+                          Counter="200"
+                          HelperText="2-3 предложения о вашем впечатлении"
+                          Margin="Margin.Dense" 
+                          Variant="Variant.Outlined" 
+                          FullWidth="true"
+                          Lines="2"
+                          For="@(() => _formModel.ShortDescription)"/>
             
             <MudTextField T="string" @bind-Value="_formModel.FullDescription" 
-                          Label="Полное описание" Required="true"
-                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" Lines="6"/>
+                          Label="Полное описание" 
+                          Required="true"
+                          RequiredError="Введите полное описание"
+                          HelperText="Подробно опишите ваш опыт чтения"
+                          Margin="Margin.Dense" 
+                          Variant="Variant.Outlined" 
+                          FullWidth="true"
+                          Lines="6"
+                          For="@(() => _formModel.FullDescription)"/>
             
             <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
-            <MudRating @bind-SelectedValue="_formModel.BookRating" HoveredValue="@_hoveredRating"/>
+            
+            <MudRating @bind-SelectedValue="_formModel.BookRating"/>
+            
+            @if (_errors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-4">
+                    <ul>
+                        @foreach (var error in _errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </MudAlert>
+            }
             
             <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" 
-                           ButtonType="ButtonType.Submit">Сохранить</MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" 
-                           Href=@($"/stories/{_story.Id}")>Отмена</MudButton>
+                <MudButton Variant="Variant.Filled" 
+                           Color="Color.Primary" 
+                           OnClick="HandleSubmit"
+                           Disabled="@(!_isValid || _isSaving)">
+                    @if (_isSaving)
+                    {
+                        <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                    }
+                    Сохранить
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" 
+                           Href="@($"/stories/{_story.Id}")">Отмена</MudButton>
             </MudStack>
-        </EditForm>
+        </MudForm>
     </MudPaper>
 }
 
 @code {
     [Parameter] public int StoryId { get; set; }
     
+    private MudForm _form = new();
     private Story? _story;
     private EditStoryFormModel _formModel = new();
     private bool _isLoading = true;
+    private bool _isSaving = false;
     private bool _isAuthor = false;
-    private int _hoveredRating = 0;
+    private bool _isValid;
+    private string[] _errors = Array.Empty<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,29 +129,69 @@ else
 
     private async Task HandleSubmit()
     {
+        await _form.ValidateAsync();
+        
+        if (!_isValid)
+        {
+            return;
+        }
+
         if (_story == null) return;
-        
-        _story.BookName = _formModel.BookName;
-        _story.ShortDescription = _formModel.ShortDescription;
-        _story.FullDescription = _formModel.FullDescription;
-        _story.BookRating = _formModel.BookRating;
-        
-        await StoryService.UpdateStoryAsync(_story);
-        NavigationManager.NavigateTo($"/stories/{_story.Id}");
+
+        _isSaving = true;
+
+        try
+        {
+            _story.BookName = _formModel.BookName;
+            _story.ShortDescription = _formModel.ShortDescription;
+            _story.FullDescription = _formModel.FullDescription;
+            _story.BookRating = _formModel.BookRating;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                NavigationManager.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+            
+            var success = await StoryService.UpdateStoryAsync(_story, userId);
+            if (success)
+            {
+                NavigationManager.NavigateTo($"/stories/{_story.Id}", forceLoad: true);
+            }
+            else
+            {
+                _errors = new[] { "Ошибка при сохранении или недостаточно прав" };
+            }
+            NavigationManager.NavigateTo($"/stories/{_story.Id}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _errors = new[] { "Ошибка при сохранении: " + ex.Message };
+        }
+        finally
+        {
+            _isSaving = false;
+        }
     }
 
     private class EditStoryFormModel
     {
-        [System.ComponentModel.DataAnnotations.Required]
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(200, MinimumLength = 3, ErrorMessage = "Название должно быть от 3 до 200 символов")]
         public string BookName { get; set; } = string.Empty;
-        
-        [System.ComponentModel.DataAnnotations.Required]
+
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(500, MinimumLength = 10, ErrorMessage = "Описание должно быть от 10 до 500 символов")]
         public string ShortDescription { get; set; } = string.Empty;
-        
-        [System.ComponentModel.DataAnnotations.Required]
+
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(5000, MinimumLength = 50, ErrorMessage = "Подробное описание должно быть от 50 до 5000 символов")]
         public string FullDescription { get; set; } = string.Empty;
-        
-        [System.ComponentModel.DataAnnotations.Range(1, 5)]
+
+        [Required(ErrorMessage = "Поставьте оценку")]
+        [Range(1, 5, ErrorMessage = "Оценка должна быть от 1 до 5")]
         public int BookRating { get; set; }
     }
 }

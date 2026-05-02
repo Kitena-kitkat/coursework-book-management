@@ -41,26 +41,29 @@ public class StoryService : IStoryService
         return story;
     }
 
-    public async Task<bool> UpdateStoryAsync(Story story)
+    public async Task<bool> UpdateStoryAsync(Story story, string userId)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
         var existing = await db.Stories.FindAsync(story.Id);
+    
         if (existing == null) return false;
-        
+        if (existing.UserId != userId) return false; // Проверка прав
+    
         existing.BookName = story.BookName;
         existing.ShortDescription = story.ShortDescription;
         existing.FullDescription = story.FullDescription;
         existing.BookRating = story.BookRating;
-        
+    
         await db.SaveChangesAsync();
         return true;
     }
 
-    public async Task<bool> DeleteStoryAsync(int storyId)
+    public async Task<bool> DeleteStoryAsync(int storyId, string userId)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
         var story = await db.Stories.FindAsync(storyId);
         if (story == null) return false;
+        if (story.UserId != userId) return false;
         db.Stories.Remove(story);
         await db.SaveChangesAsync();
         return true;

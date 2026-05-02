@@ -210,7 +210,7 @@ else
     private async Task DeleteReview(int reviewId)
     {
         if (_currentUser == null) return;
-        await ReviewService.DeleteReviewAsync(reviewId);
+        await ReviewService.DeleteReviewAsync(reviewId, _currentUser.Id);
         await LoadDataAsync();
     }
 
@@ -223,7 +223,7 @@ else
     private async Task SaveEditedReview(int reviewId)
     {
         if (string.IsNullOrWhiteSpace(_editingReviewText)) return;
-        await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText });
+        await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText }, _currentUser?.Id);
         CancelEditReview();
         await LoadDataAsync();
     }
@@ -238,7 +238,7 @@ else
     {
         if (_story != null && _isAuthor)
         {
-            await StoryService.DeleteStoryAsync(_story.Id);
+            await StoryService.DeleteStoryAsync(_story.Id, _currentUser.Id);
             NavigationManager.NavigateTo("/stories");
         }
     }

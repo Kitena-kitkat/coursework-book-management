@@ -25,19 +25,21 @@ public class ReviewService : IReviewService
         return review;
     }
 
-    public async Task<bool> UpdateReviewAsync(Review review)
+    public async Task<bool> UpdateReviewAsync(Review review, string userId)
     {
         var existing = await _db.Reviews.FindAsync(review.Id);
         if (existing == null) return false;
+        if (existing.AuthorId != userId) return false;
         existing.Text = review.Text;
         await _db.SaveChangesAsync();
         return true;
     }
 
-    public async Task<bool> DeleteReviewAsync(int reviewId)
+    public async Task<bool> DeleteReviewAsync(int reviewId, string userId)
     {
         var review = await _db.Reviews.FindAsync(reviewId);
         if (review == null) return false;
+        if (review.AuthorId != userId) return false;
         _db.Reviews.Remove(review);
         await _db.SaveChangesAsync();
         return true;
