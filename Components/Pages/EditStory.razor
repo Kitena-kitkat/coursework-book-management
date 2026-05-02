@@ -1,0 +1,113 @@
+﻿@page "/stories/{StoryId:int}/edit"
+@attribute [Authorize]
+@using BookManagement.Models
+@using BookManagement.Services
+@inject IStoryService StoryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true"/>
+}
+else if (_story == null)
+{
+    <MudAlert Severity="Severity.Error">Рассказ не найден</MudAlert>
+}
+else if (!_isAuthor)
+{
+    <MudAlert Severity="Severity.Warning">Вы не можете редактировать этот рассказ</MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.h4" Class="mb-4">✏️ Редактировать рассказ</MudText>
+
+    <MudPaper Elevation="2" Class="pa-6">
+        <EditForm Model="@_formModel" FormName="EditStoryForm" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            
+            <MudTextField T="string" @bind-Value="_formModel.BookName" 
+                          Label="Название книги" Required="true"
+                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
+            
+            <MudTextField T="string" @bind-Value="_formModel.ShortDescription" 
+                          Label="Короткое описание" Required="true" Counter="200"
+                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" Lines="2"/>
+            
+            <MudTextField T="string" @bind-Value="_formModel.FullDescription" 
+                          Label="Полное описание" Required="true"
+                          Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true" Lines="6"/>
+            
+            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
+            <MudRating @bind-Value="_formModel.BookRating" HoveredValue="@_hoveredRating"/>
+            
+            <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                           ButtonType="ButtonType.Submit">Сохранить</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                           Href=@($"/stories/{_story.Id}")>Отмена</MudButton>
+            </MudStack>
+        </EditForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public int StoryId { get; set; }
+    
+    private Story? _story;
+    private EditStoryFormModel _formModel = new();
+    private bool _isLoading = true;
+    private bool _isAuthor = false;
+    private int _hoveredRating = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _story = await StoryService.GetStoryByIdAsync(StoryId);
+        
+        if (_story != null)
+        {
+            _formModel = new EditStoryFormModel
+            {
+                BookName = _story.BookName,
+                ShortDescription = _story.ShortDescription,
+                FullDescription = _story.FullDescription,
+                BookRating = _story.BookRating
+            };
+
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            _isAuthor = currentUserId == _story.UserId;
+        }
+        
+        _isLoading = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (_story == null) return;
+        
+        _story.BookName = _formModel.BookName;
+        _story.ShortDescription = _formModel.ShortDescription;
+        _story.FullDescription = _formModel.FullDescription;
+        _story.BookRating = _formModel.BookRating;
+        
+        await StoryService.UpdateStoryAsync(_story);
+        NavigationManager.NavigateTo($"/stories/{_story.Id}");
+    }
+
+    private class EditStoryFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string BookName { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Required]
+        public string ShortDescription { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Required]
+        public string FullDescription { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Range(1, 5)]
+        public int BookRating { get; set; }
+    }
+}

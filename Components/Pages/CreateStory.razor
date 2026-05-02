@@ -1,0 +1,164 @@
+﻿@page "/stories/create"
+@attribute [Authorize]
+@using BookManagement.Models
+@using BookManagement.Services
+@using System.ComponentModel.DataAnnotations
+@inject IStoryService StoryService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+
+<MudText Typo="Typo.h4" Class="mb-4">📝 Рассказать о книге</MudText>
+
+<MudPaper Elevation="2" Class="pa-6">
+    <MudForm @ref="_form" Model="@_formModel" @bind-IsValid="@_isValid" @bind-Errors="@_errors">
+        <MudTextField T="string" @bind-Value="_formModel.BookName" 
+                      Label="Название книги" 
+                      Required="true"
+                      RequiredError="Введите название книги"
+                      HelperText="Например: Мастер и Маргарита"
+                      Margin="Margin.Dense" 
+                      Variant="Variant.Outlined" 
+                      FullWidth="true"
+                      For="@(() => _formModel.BookName)"/>
+        
+        <MudTextField T="string" @bind-Value="_formModel.ShortDescription" 
+                      Label="Короткое описание" 
+                      Required="true" 
+                      RequiredError="Введите короткое описание"
+                      Counter="200"
+                      HelperText="2-3 предложения о вашем впечатлении"
+                      Margin="Margin.Dense" 
+                      Variant="Variant.Outlined" 
+                      FullWidth="true"
+                      Lines="2"
+                      For="@(() => _formModel.ShortDescription)"/>
+        
+        <MudTextField T="string" @bind-Value="_formModel.FullDescription" 
+                      Label="Полное описание" 
+                      Required="true"
+                      RequiredError="Введите полное описание"
+                      HelperText="Подробно опишите ваш опыт чтения"
+                      Margin="Margin.Dense" 
+                      Variant="Variant.Outlined" 
+                      FullWidth="true"
+                      Lines="6"
+                      For="@(() => _formModel.FullDescription)"/>
+        
+        <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
+        
+        <MudRating @bind-Value="_formModel.BookRating" 
+                   HoveredValue="@_hoveredRating"
+                   HoverText="@GetHoverText(_hoveredRating)"
+                   For="@(() => _formModel.BookRating)"/>
+        
+        @if (_errors.Any())
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">
+                <ul>
+                    @foreach (var error in _errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </MudAlert>
+        }
+        
+        <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       OnClick="HandleSubmit"
+                       Disabled="@(!_isValid || _isLoading)">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                }
+                Опубликовать
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" 
+                       Href="/stories">Отмена</MudButton>
+        </MudStack>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private MudForm _form = new();
+    private CreateStoryFormModel _formModel = new();
+    private int _hoveredRating = 0;
+    private bool _isValid;
+    private string[] _errors = Array.Empty<string>();
+    private bool _isLoading = false;
+
+    private string GetHoverText(int rating) => rating switch
+    {
+        1 => "Ужасно",
+        2 => "Плохо",
+        3 => "Нормально",
+        4 => "Хорошо",
+        5 => "Отлично",
+        _ => ""
+    };
+
+    private async Task HandleSubmit()
+    {
+        await _form.ValidateAsync();
+        
+        if (!_isValid)
+        {
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                NavigationManager.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
+            var story = new Story
+            {
+                BookName = _formModel.BookName,
+                ShortDescription = _formModel.ShortDescription,
+                FullDescription = _formModel.FullDescription,
+                BookRating = _formModel.BookRating,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await StoryService.CreateStoryAsync(story);
+            NavigationManager.NavigateTo($"/stories/{story.Id}", forceLoad: true);
+        }
+        catch (Exception)
+        {
+            // Можно добавить обработку ошибок
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private class CreateStoryFormModel
+    {
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(200, MinimumLength = 3, ErrorMessage = "Название должно быть от 3 до 200 символов")]
+        public string BookName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(500, MinimumLength = 10, ErrorMessage = "Описание должно быть от 10 до 500 символов")]
+        public string ShortDescription { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Обязательное поле")]
+        [StringLength(5000, MinimumLength = 50, ErrorMessage = "Подробное описание должно быть от 50 до 5000 символов")]
+        public string FullDescription { get; set; } = string.Empty;
+
+        [Range(1, 5, ErrorMessage = "Оценка должна быть от 1 до 5")]
+        public int BookRating { get; set; } = 5;
+    }
+}

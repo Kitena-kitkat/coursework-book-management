@@ -1,5 +1,5 @@
-﻿@page "/stories"
-@attribute [AllowAnonymous]
+﻿@page "/favorites"
+@attribute [Authorize]
 @using BookManagement.Models
 @using BookManagement.Services
 @inject IStoryService StoryService
@@ -7,15 +7,14 @@
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
 
-<MudText Typo="Typo.h4" Class="mb-4">📖 Все рассказы</MudText>
-
-<MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/stories/create" Class="mb-4">
-    ➕ Рассказать о книге
-</MudButton>
+<MudText Typo="Typo.h4" Class="mb-4">⭐ Избранные рассказы</MudText>
 
 @if (_stories.Count == 0)
 {
-    <MudAlert Severity="Severity.Info">Пока нет рассказов. Будьте первым!</MudAlert>
+    <MudAlert Severity="Severity.Info">
+        У вас пока нет избранных рассказов. 
+        <MudLink Href="/stories">Посмотреть все</MudLink>
+    </MudAlert>
 }
 else
 {
@@ -32,13 +31,10 @@ else
                             </MudText>
                         </CardHeaderContent>
                         <CardHeaderActions>
-                            @if (_currentUser != null)
-                            {
-                                <MudIconButton 
-                                    Icon="@(_favorites.Contains(story.Id) ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
-                                    Color="@(_favorites.Contains(story.Id) ? Color.Error : Color.Default)"
-                                    OnClick="@(() => ToggleFavorite(story.Id))"/>
-                            }
+                            <MudIconButton Icon="Icons.Material.Filled.Favorite" 
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveFromFavorites(story.Id))"
+                                           Title="Убрать из избранного"/>
                         </CardHeaderActions>
                     </MudCardHeader>
                     
@@ -59,41 +55,30 @@ else
 
 @code {
     private List<Story> _stories = new();
-    private HashSet<int> _favorites = new();
-    private ApplicationUser? _currentUser;
 
     protected override async Task OnInitializedAsync()
     {
-        _stories = await StoryService.GetAllStoriesAsync();
-
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         
         if (!string.IsNullOrEmpty(userId))
         {
             var favIds = await StoryService.GetFavoriteStoryIdsAsync(userId);
-            _favorites = new HashSet<int>(favIds);
-            // Загружаем пользователя для отображения имени
-            _currentUser = new ApplicationUser { Id = userId }; // упрощённо
+            var allStories = await StoryService.GetAllStoriesAsync();
+            _stories = allStories.Where(s => favIds.Contains(s.Id)).ToList();
         }
     }
 
-    private async Task ToggleFavorite(int storyId)
+    private async Task RemoveFromFavorites(int storyId)
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         
-        if (string.IsNullOrEmpty(userId)) 
-        { 
-            NavigationManager.NavigateTo("/login"); 
-            return; 
+        if (!string.IsNullOrEmpty(userId))
+        {
+            await StoryService.ToggleFavoriteAsync(userId, storyId);
+            _stories.RemoveAll(s => s.Id == storyId);
+            StateHasChanged();
         }
-        
-        await StoryService.ToggleFavoriteAsync(userId, storyId);
-        
-        if (_favorites.Contains(storyId))
-            _favorites.Remove(storyId);
-        else
-            _favorites.Add(storyId);
     }
 }
