@@ -59,25 +59,27 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ← Эндпоинты ДО MapRazorComponents
-app.MapPost("/api/login", async (
+app.MapGet("/api/login", async (
+    string email,
+    string password,
+    string redirectUrl,
     SignInManager<ApplicationUser> signInManager,
-    [FromBody] LoginRequest request) =>
+    HttpContext httpContext) =>
 {
     var result = await signInManager.PasswordSignInAsync(
-        request.Email, 
-        request.Password, 
+        email, 
+        password, 
         isPersistent: false, 
         lockoutOnFailure: false);
 
     if (result.Succeeded)
-        return Results.Ok(new { success = true, redirectUrl = "/profile" });
-    else if (result.IsLockedOut)
-        return Results.BadRequest(new { error = "Аккаунт заблокирован" });
-    else if (result.IsNotAllowed)
-        return Results.BadRequest(new { error = "Вход не разрешён" });
+    {
+        return Results.Redirect(redirectUrl ?? "/profile");
+    }
     else
-        return Results.BadRequest(new { error = "Неверный email или пароль" });
+    {
+        return Results.Redirect($"/login?error=invalid&returnUrl={Uri.EscapeDataString(redirectUrl)}");
+    }
 });
 
 app.MapRazorComponents<BookManagement.Components.App>()

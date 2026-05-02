@@ -1,7 +1,8 @@
 ﻿@page "/login"
 @attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
 @inject NavigationManager NavigationManager
-@inject HttpClient Http
 @rendermode RenderMode.InteractiveServer
 
 <MudGrid Justify="Justify.Center" Class="mt-8">
@@ -52,6 +53,7 @@
     private LoginFormModel _formModel = new();
     private string _error = string.Empty;
     private bool _isLoading = false;
+    
     [Parameter]
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
@@ -66,26 +68,15 @@
 
         try
         {
-            // ← Используем BaseUri для абсолютного URL
-            var response = await Http.PostAsJsonAsync($"{NavigationManager.BaseUri}api/login", _formModel);
-            var content = await response.Content.ReadFromJsonAsync<LoginResponse>();
-
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                var redirect = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/profile";
-                NavigationManager.NavigateTo(redirect, forceLoad: true);
-            }
-            else
-            {
-                _error = content?.Error ?? "Ошибка входа";
-            }
+            // Выполняем полный редирект на API endpoint для установки cookie
+            var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/profile";
+            NavigationManager.NavigateTo(
+                $"/api/login?email={Uri.EscapeDataString(_formModel.Email)}&password={Uri.EscapeDataString(_formModel.Password)}&redirectUrl={Uri.EscapeDataString(redirectUrl)}", 
+                forceLoad: true);
         }
         catch (Exception ex)
         {
-            _error = "Ошибка соединения: " + ex.Message;
-        }
-        finally
-        {
+            _error = "Ошибка: " + ex.Message;
             _isLoading = false;
         }
     }
@@ -94,12 +85,5 @@
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-    }
-
-    private class LoginResponse
-    {
-        public bool Success { get; set; }
-        public string? RedirectUrl { get; set; }
-        public string? Error { get; set; }
     }
 }
