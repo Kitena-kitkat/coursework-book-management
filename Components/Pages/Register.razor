@@ -70,7 +70,7 @@
 
         if (result.Succeeded)
         {
-            NavigationManager.NavigateTo("/login");
+            NavigationManager.NavigateTo("/login", forceLoad: true);
         }
         else
         {

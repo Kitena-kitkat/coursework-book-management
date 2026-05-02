@@ -1,9 +1,7 @@
 ﻿@page "/login"
 @attribute [AllowAnonymous]
-@using Microsoft.AspNetCore.Identity
-@using BookManagement.Models
-@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
+@inject HttpClient Http
 @rendermode RenderMode.InteractiveServer
 
 <MudGrid Justify="Justify.Center" Class="mt-8">
@@ -31,7 +29,8 @@
                            Color="Color.Primary" 
                            OnClick="HandleLogin"
                            FullWidth="true"
-                           Class="mt-4">
+                           Class="mt-4"
+                           Loading="_isLoading">
                     Войти
                 </MudButton>
                 
@@ -52,27 +51,42 @@
     private MudForm _form = new();
     private LoginFormModel _formModel = new();
     private string _error = string.Empty;
+    private bool _isLoading = false;
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
 
     private async Task HandleLogin()
     {
         await _form.ValidateAsync();
-        
-        if (!_form.IsValid)
-            return;
+        if (!_form.IsValid) return;
 
-        var result = await SignInManager.PasswordSignInAsync(
-            _formModel.Email, 
-            _formModel.Password, 
-            isPersistent: false, 
-            lockoutOnFailure: false);
+        _isLoading = true;
+        _error = string.Empty;
 
-        if (result.Succeeded)
+        try
         {
-            NavigationManager.NavigateTo("/profile");
+            // ← Используем BaseUri для абсолютного URL
+            var response = await Http.PostAsJsonAsync($"{NavigationManager.BaseUri}api/login", _formModel);
+            var content = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                var redirect = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/profile";
+                NavigationManager.NavigateTo(redirect, forceLoad: true);
+            }
+            else
+            {
+                _error = content?.Error ?? "Ошибка входа";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _error = "Неверный email или пароль";
+            _error = "Ошибка соединения: " + ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
         }
     }
 
@@ -80,5 +94,12 @@
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    private class LoginResponse
+    {
+        public bool Success { get; set; }
+        public string? RedirectUrl { get; set; }
+        public string? Error { get; set; }
     }
 }
