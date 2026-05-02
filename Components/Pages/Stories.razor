@@ -1,0 +1,88 @@
+﻿@page "/stories"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
+@using BookManagement.Services
+@inject IStoryService StoryService  
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+
+<MudText Typo="Typo.h4" Class="mb-4">📖 Все рассказы</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/stories/create" Class="mb-4">
+    ➕ Рассказать о книге
+</MudButton>
+
+<MudGrid Spacing="4">
+    @foreach (var story in _stories)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@story.BookName</MudText>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
+                            Автор: @story.Author?.UserName
+                        </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton 
+                            Icon="@(_favorites.Contains(story.Id) ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                            Color="@(_favorites.Contains(story.Id) ? Color.Error : Color.Default)"
+                            OnClick="@(() => ToggleFavorite(story.Id))"/>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                
+                <MudCardContent>
+                    <MudText>@story.ShortDescription</MudText>
+                    <MudRating Size="Size.Small" ReadOnly="true" Value="@story.BookRating"/>
+                </MudCardContent>
+                
+                <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" 
+                               Href=@($"/stories/{story.Id}")>Подробности</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private List<Story> _stories = new();
+    private HashSet<int> _favorites = new();
+    private ApplicationUser? _currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Один асинхронный вызов — нет конкуренции за DbContext
+        _stories = await StoryService.GetAllStoriesAsync();
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            var email = authState.User.Identity.Name;
+            _currentUser = await UserManager.FindByEmailAsync(email!);
+            if (_currentUser != null)
+            {
+                // ✅ Второй вызов — после завершения первого
+                var favIds = await StoryService.GetFavoriteStoryIdsAsync(_currentUser.Id);
+                _favorites = new HashSet<int>(favIds);
+            }
+        }
+    }
+
+    private async Task ToggleFavorite(int storyId)
+    {
+        if (_currentUser == null) { NavigationManager.NavigateTo("/login"); return; }
+        
+        await StoryService.ToggleFavoriteAsync(_currentUser.Id, storyId);
+        
+        // Обновляем локальное состояние
+        if (_favorites.Contains(storyId))
+            _favorites.Remove(storyId);
+        else
+            _favorites.Add(storyId);
+    }
+}

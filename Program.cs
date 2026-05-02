@@ -1,17 +1,22 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;  // ← для [FromBody]
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using BookManagement.Data;
 using BookManagement.Models;
+using BookManagement.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMudServices();
-builder.Services.AddHttpClient(); // ← для HttpClient в компонентах
+builder.Services.AddHttpClient();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<ApplicationDbContext>(sp => 
+    sp.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -28,10 +33,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    
-
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    
     options.LoginPath = "/login";
     options.LogoutPath = "/logout";
     options.AccessDeniedPath = "/access-denied";
@@ -44,6 +46,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IStoryService, StoryService>();
 
 var app = builder.Build();
 
@@ -63,8 +66,7 @@ app.MapGet("/api/login", async (
     string email,
     string password,
     string redirectUrl,
-    SignInManager<ApplicationUser> signInManager,
-    HttpContext httpContext) =>
+    SignInManager<ApplicationUser> signInManager) =>
 {
     var result = await signInManager.PasswordSignInAsync(
         email, 
@@ -86,7 +88,3 @@ app.MapRazorComponents<BookManagement.Components.App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
-
-// ← Records для запросов (в конце файла)
-public record LoginRequest(string Email, string Password);
-public record RegisterRequest(string Email, string Password, string Username);

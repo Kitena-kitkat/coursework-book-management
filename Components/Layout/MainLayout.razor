@@ -1,17 +1,60 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using MudBlazor
 
 <MudThemeProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h6" Class="ml-4">BookManagement</MudText>
+    <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudText Typo="Typo.h6" Class="ml-4">📚 BookStories</MudText>
+        <MudSpacer/>
+        
+        @if (_currentUser != null)
+        {
+            <MudLink Href="/profile" Class="mr-4" Style="color: white;">
+                @_currentUser.UserName
+            </MudLink>
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="HandleLogout">
+                Выйти
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/login" Style="color: white;">
+                Войти
+            </MudButton>
+        }
     </MudAppBar>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private ApplicationUser? _currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            var email = authState.User.Identity.Name;
+            _currentUser = await UserManager.FindByEmailAsync(email!);
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        NavigationManager.NavigateTo("/login", forceLoad: true);
+    }
+
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+}

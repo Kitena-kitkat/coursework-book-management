@@ -1,0 +1,246 @@
+﻿@page "/stories/{StoryId:int}"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
+@using BookManagement.Data
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using BookManagement.Services
+@inject IStoryService StoryService
+
+@if (_story == null)
+{
+    <MudText>Рассказ не найден</MudText>
+}
+else
+{
+    <MudPaper Elevation="2" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4">@_story.BookName</MudText>
+        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+            Автор: @_story.Author?.UserName • @_story.CreatedAt:dd.MM.yyyy
+        </MudText>
+        
+        <MudRating Size="Size.Large" ReadOnly="true" Value="@_story.BookRating" Class="my-2"/>
+        
+        <MudText Class="mt-2">@_story.ShortDescription</MudText>
+        <MudText Class="mt-2">@_story.FullDescription</MudText>
+        
+        <MudDivider Class="my-4"/>
+        
+        <MudStack Direction="Direction.Row" Spacing="2">
+            @if (_isAuthor)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" 
+                           Href="@($"/stories/{_story.Id}/edit")">✏️ Редактировать</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                           OnClick="DeleteStory">🗑️ Удалить</MudButton>
+            }
+            <MudIconButton 
+                Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                Color="@(_isFavorited ? Color.Error : Color.Default)"
+                OnClick="ToggleFavorite"
+                Title="Добавить в избранное"/>
+        </MudStack>
+        
+        <MudDivider Class="my-4"/>
+        
+        <MudText Typo="Typo.h6">👍 Лайки: @_likeCount 👎 Дизлайки: @_dislikeCount</MudText>
+        @if (_currentUser != null && !_isAuthor)
+        {
+            <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" 
+                           OnClick="@(() => ToggleStoryLike(true))">👍</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Error" 
+                           OnClick="@(() => ToggleStoryLike(false))">👎</MudButton>
+            </MudStack>
+        }
+    </MudPaper>
+
+    <!-- Отзывы -->
+    <MudText Typo="Typo.h5" Class="mb-4">💬 Отзывы (@_reviews.Count)</MudText>
+    
+    @if (_currentUser != null)
+    {
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudTextField @bind-Value="_newReviewText" Label="Ваш отзыв" 
+                          Lines="3" Variant="Variant.Outlined" FullWidth="true"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+                       OnClick="AddReview" Class="mt-2">Отправить</MudButton>
+        </MudPaper>
+    }
+    
+    @foreach (var review in _reviews)
+    {
+        <MudPaper Elevation="1" Class="pa-4 mb-2">
+            <MudStack Direction="Direction.Row" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.subtitle2">
+                    <strong>@review.Author?.UserName</strong> • @review.DateOfCreation:dd.MM.yyyy
+                </MudText>
+                @if (_currentUser != null && review.AuthorId == _currentUser.Id)
+                {
+                    <MudStack Direction="Direction.Row" Spacing="1">
+                        <MudIconButton Icon="Icons.Material.Filled.Edit" Size="Size.Small" 
+                                       OnClick="@(() => EditReview(review))"/>
+                        <MudIconButton Icon="Icons.Material.Filled.Delete" Size="Size.Small" 
+                                       Color="Color.Error" OnClick="@(() => DeleteReview(review.Id))"/>
+                    </MudStack>
+                }
+            </MudStack>
+            <MudText Class="mt-2">@review.Text</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                👍 @review.Likes?.Count(l => l.IsLiked) | 👎 @review.Likes?.Count(l => !l.IsLiked)
+            </MudText>
+            @if (_currentUser != null)
+            {
+                <MudStack Direction="Direction.Row" Spacing="1" Class="mt-2">
+                    <MudButton Variant="Variant.Text" Size="Size.Small" 
+                               OnClick="@(() => ToggleReviewLike(review.Id, true))">👍</MudButton>
+                    <MudButton Variant="Variant.Text" Size="Size.Small" 
+                               OnClick="@(() => ToggleReviewLike(review.Id, false))">👎</MudButton>
+                </MudStack>
+            }
+        </MudPaper>
+    }
+}
+
+@code {
+    [Parameter] public int StoryId { get; set; }
+    
+    private Story? _story;
+    private List<Review> _reviews = new();
+    private ApplicationUser? _currentUser;
+    private bool _isAuthor = false;
+    private bool _isFavorited = false;
+    private int _likeCount = 0;
+    private int _dislikeCount = 0;
+    private string _newReviewText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Последовательные вызовы — нет конкуренции
+        _story = await StoryService.GetStoryByIdAsync(StoryId);
+        if (_story == null) return;
+    
+        _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
+        _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
+    
+        // ... загрузка пользователя и проверок
+    }
+
+    private async Task ToggleFavorite()
+    {
+        if (_currentUser == null) { NavigationManager.NavigateTo("/login"); return; }
+        
+        if (_isFavorited)
+        {
+            var fav = await Db.FavoriteStories
+                .FirstOrDefaultAsync(f => f.StoryId == StoryId && f.UserId == _currentUser.Id);
+            if (fav != null) { Db.FavoriteStories.Remove(fav); _isFavorited = false; }
+        }
+        else
+        {
+            Db.FavoriteStories.Add(new FavoriteStory { StoryId = StoryId, UserId = _currentUser.Id });
+            _isFavorited = true;
+        }
+        await Db.SaveChangesAsync();
+    }
+
+    private async Task ToggleStoryLike(bool isLiked)
+    {
+        if (_currentUser == null) return;
+        
+        var existing = await Db.StoryLikes
+            .FirstOrDefaultAsync(l => l.StoryId == StoryId && l.UserId == _currentUser.Id);
+        
+        if (existing != null)
+        {
+            if (existing.IsLiked == isLiked)
+            {
+                Db.StoryLikes.Remove(existing); // Убрать лайк
+            }
+            else
+            {
+                existing.IsLiked = isLiked; // Сменить лайк на дизлайк или наоборот
+            }
+        }
+        else
+        {
+            Db.StoryLikes.Add(new StoryLike { StoryId = StoryId, UserId = _currentUser.Id, IsLiked = isLiked });
+        }
+        
+        await Db.SaveChangesAsync();
+        // Пересчитываем
+        _likeCount = _story!.Likes?.Count(l => l.IsLiked) ?? 0;
+        _dislikeCount = _story.Likes?.Count(l => !l.IsLiked) ?? 0;
+    }
+
+    private async Task AddReview()
+    {
+        if (_currentUser == null || string.IsNullOrWhiteSpace(_newReviewText)) return;
+        
+        Db.Reviews.Add(new Review
+        {
+            StoryId = StoryId,
+            AuthorId = _currentUser.Id,
+            Text = _newReviewText,
+            DateOfCreation = DateTime.UtcNow
+        });
+        await Db.SaveChangesAsync();
+        _newReviewText = string.Empty;
+        // Перезагружаем отзывы
+        OnInitializedAsync();
+    }
+
+    private async Task ToggleReviewLike(int reviewId, bool isLiked)
+    {
+        if (_currentUser == null) return;
+        
+        var existing = await Db.ReviewLikes
+            .FirstOrDefaultAsync(l => l.ReviewId == reviewId && l.UserId == _currentUser.Id);
+        
+        if (existing != null)
+        {
+            if (existing.IsLiked == isLiked)
+                Db.ReviewLikes.Remove(existing);
+            else
+                existing.IsLiked = isLiked;
+        }
+        else
+        {
+            Db.ReviewLikes.Add(new ReviewLike { ReviewId = reviewId, UserId = _currentUser.Id, IsLiked = isLiked });
+        }
+        await Db.SaveChangesAsync();
+        await OnInitializedAsync();
+    }
+
+    private async Task DeleteReview(int reviewId)
+    {
+        var review = await Db.Reviews.FindAsync(reviewId);
+        if (review != null && review.AuthorId == _currentUser?.Id)
+        {
+            Db.Reviews.Remove(review);
+            await Db.SaveChangesAsync();
+            await OnInitializedAsync();
+        }
+    }
+
+    private void EditReview(Review review)
+    {
+        // Упрощённо: можно открыть модальное окно или перейти на страницу редактирования
+        _newReviewText = review.Text;
+    }
+
+    private async Task DeleteStory()
+    {
+        if (_story != null && _isAuthor)
+        {
+            Db.Stories.Remove(_story);
+            await Db.SaveChangesAsync();
+            NavigationManager.NavigateTo("/stories");
+        }
+    }
+}
