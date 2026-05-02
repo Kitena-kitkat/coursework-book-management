@@ -44,12 +44,14 @@ else
                     
                     <MudCardContent>
                         <MudText>@story.ShortDescription</MudText>
-                        <MudRating Size="Size.Small" ReadOnly="true" Value="@story.BookRating"/>
+                        <MudRating Size="Size.Small" 
+                                   SelectedValue="@story.BookRating"
+                                   Disabled="true"/>
                     </MudCardContent>
                     
                     <MudCardActions>
                         <MudButton Variant="Variant.Text" Color="Color.Primary" 
-                                   Href=@($"/stories/{story.Id}")>Подробности</MudButton>
+                                   Href="@($"/stories/{story.Id}")">Подробности</MudButton>
                     </MudCardActions>
                 </MudCard>
             </MudItem>
@@ -73,8 +75,7 @@ else
         {
             var favIds = await StoryService.GetFavoriteStoryIdsAsync(userId);
             _favorites = new HashSet<int>(favIds);
-            // Загружаем пользователя для отображения имени
-            _currentUser = new ApplicationUser { Id = userId }; // упрощённо
+            _currentUser = new ApplicationUser { Id = userId };
         }
     }
 
@@ -85,7 +86,7 @@ else
         
         if (string.IsNullOrEmpty(userId)) 
         { 
-            NavigationManager.NavigateTo("/login"); 
+            NavigationManager.NavigateTo("/login", forceLoad: true); 
             return; 
         }
         

@@ -47,10 +47,7 @@
         
         <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
         
-        <MudRating @bind-Value="_formModel.BookRating" 
-                   HoveredValue="@_hoveredRating"
-                   HoverText="@GetHoverText(_hoveredRating)"
-                   For="@(() => _formModel.BookRating)"/>
+        <MudRating @bind-SelectedValue="_formModel.BookRating"/>
         
         @if (_errors.Any())
         {
@@ -88,16 +85,6 @@
     private bool _isValid;
     private string[] _errors = Array.Empty<string>();
     private bool _isLoading = false;
-
-    private string GetHoverText(int rating) => rating switch
-    {
-        1 => "Ужасно",
-        2 => "Плохо",
-        3 => "Нормально",
-        4 => "Хорошо",
-        5 => "Отлично",
-        _ => ""
-    };
 
     private async Task HandleSubmit()
     {
