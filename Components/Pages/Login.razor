@@ -1,0 +1,69 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+
+<MudText Typo="Typo.h5" Class="mb-4">Вход</MudText>
+
+<MudForm Model="@_formModel">
+    <MudTextField @bind-Value="_formModel.Email" 
+                  Label="Email" 
+                  Required="true"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"/>
+    
+    <MudTextField @bind-Value="_formModel.Password" 
+                  Label="Пароль" 
+                  Required="true"
+                  InputType="InputType.Password"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"/>
+    
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               OnClick="HandleLogin"
+               Class="mt-4">
+        Войти
+    </MudButton>
+    
+    <MudText Class="mt-2">
+        Нет аккаунта? <MudLink Href="/register">Зарегистрироваться</MudLink>
+    </MudText>
+    
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert>
+    }
+</MudForm>
+
+@code {
+    private LoginFormModel _formModel = new();
+    private string _error = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        var result = await SignInManager.PasswordSignInAsync(
+            _formModel.Email, 
+            _formModel.Password, 
+            isPersistent: false, 
+            lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo("/profile");
+        }
+        else
+        {
+            _error = "Неверный email или пароль";
+        }
+    }
+
+    private class LoginFormModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

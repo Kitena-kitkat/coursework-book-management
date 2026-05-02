@@ -1,0 +1,87 @@
+﻿@page "/register"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Identity
+@using BookManagement.Models
+@using BookManagement.Data
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@rendermode RenderMode.InteractiveServer
+
+<MudText Typo="Typo.h5" Class="mb-4">Регистрация</MudText>
+
+<MudForm Model="@_formModel">
+    <MudTextField @bind-Value="_formModel.Username" 
+                  Label="Имя пользователя" 
+                  Required="true"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"/>
+    
+    <MudTextField @bind-Value="_formModel.Email" 
+                  Label="Email" 
+                  Required="true"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"/>
+    
+    <MudTextField @bind-Value="_formModel.Password" 
+                  Label="Пароль" 
+                  Required="true"
+                  InputType="InputType.Password"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"/>
+    
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               OnClick="HandleRegister"
+               Class="mt-4">
+        Зарегистрироваться
+    </MudButton>
+    
+    <MudText Class="mt-2">
+        Уже есть аккаунт? <MudLink Href="/login">Войти</MudLink>
+    </MudText>
+    
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert>
+    }
+</MudForm>
+
+@code {
+    private RegisterFormModel _formModel = new();
+    private string _error = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        if (string.IsNullOrWhiteSpace(_formModel.Username) || 
+            string.IsNullOrWhiteSpace(_formModel.Password))
+        {
+            _error = "Заполните все поля";
+            return;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = _formModel.Email,
+            Email = _formModel.Email,
+            DateOfRegistration = DateTime.UtcNow
+        };
+
+        var result = await UserManager.CreateAsync(user, _formModel.Password);
+
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            _error = result.Errors.FirstOrDefault()?.Description ?? "Ошибка регистрации";
+        }
+    }
+
+    private class RegisterFormModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
