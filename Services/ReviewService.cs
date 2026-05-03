@@ -15,6 +15,8 @@ public class ReviewService : IReviewService
             .Include(r => r.Author)
             .Include(r => r.Likes)
             .Where(r => r.StoryId == storyId)
+            .OrderByDescending(r => r.Likes!.Count(l => l.IsLiked))  //  Сначала больше лайков
+            .ThenByDescending(r => r.DateOfCreation)                  //  Потом новее
             .ToListAsync();
 
     public async Task<Review> CreateReviewAsync(Review review)
@@ -44,9 +46,7 @@ public class ReviewService : IReviewService
         await _db.SaveChangesAsync();
         return true;
     }
-
-    public async Task<int> GetLikeCountAsync(int reviewId, bool isLiked) =>
-        await _db.ReviewLikes.CountAsync(l => l.ReviewId == reviewId && l.IsLiked == isLiked);
+    
 
     public async Task ToggleReviewLikeAsync(string userId, int reviewId, bool isLiked)
     {
@@ -66,7 +66,4 @@ public class ReviewService : IReviewService
         }
         await _db.SaveChangesAsync();
     }
-
-    public async Task<bool> IsReviewLikedByUserAsync(string userId, int reviewId) =>
-        await _db.ReviewLikes.AnyAsync(l => l.UserId == userId && l.ReviewId == reviewId && l.IsLiked);
 }
