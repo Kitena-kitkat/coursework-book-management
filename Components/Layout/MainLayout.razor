@@ -10,12 +10,13 @@
 
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
         <MudText Typo="Typo.h6" Class="ml-4">📚 BookStories</MudText>
         <MudSpacer/>
-        
+
         @if (_currentUser != null)
         {
-            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/profile">
+            <MudButton StartIcon="material-symbols-outlined/home" Variant="Variant.Filled" Color="Color.Secondary" Href="/profile">
                 @_currentUser.UserName
             </MudButton>
         }
@@ -46,11 +47,5 @@
             _currentUser = await UserManager.FindByEmailAsync(email!);
         }
     }
-
-    private async Task HandleLogout()
-    {
-        NavigationManager.NavigateTo("/login", forceLoad: true);
-    }
-
-    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    
 }
