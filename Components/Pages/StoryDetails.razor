@@ -14,60 +14,130 @@
 }
 else
 {
-    <!-- Информация о рассказе -->
     <MudPaper Elevation="2" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h4">@_story.BookName</MudText>
-        <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
-            Автор: @_story.Author?.UserName • @_story.CreatedAt
-        </MudText>
-        
-        <MudRating Size="Size.Large" ReadOnly="true" SelectedValue="@_story.BookRating" Class="my-2"/>
-        
-        <MudText Class="mt-2">@_story.ShortDescription</MudText>
-        <MudText Class="mt-2">@_story.FullDescription</MudText>
-        
-        <MudDivider Class="my-4"/>
-        
-        <MudStack Direction="Direction.Row" Spacing="2">
-            @if (_isAuthor)
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Название книги</MudText>
+                <MudText Typo="Typo.h6" Class="mb-3">@_story.BookName</MudText>
+            </MudItem>
+            
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Автор</MudText>
+                <MudText Typo="Typo.body1" Class="mb-3">@_story.Author?.UserName</MudText>
+            </MudItem>
+            
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Дата создания</MudText>
+                <MudText Typo="Typo.body1" Class="mb-3">@_story.CreatedAt.ToString("dd.MM.yyyy")</MudText>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Оценка книги</MudText>
+                <MudRating Size="Size.Small" ReadOnly="true" SelectedValue="@_story.BookRating" Class="my-2"/>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Краткий рассказ</MudText>
+                <MudPaper Elevation="0" Class="bg-grey-lighten-4 pa-3 rounded mt-1 mb-3">
+                    <MudText Typo="Typo.body2" Style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">
+                        @_story.ShortDescription
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Полный рассказ</MudText>
+                <MudPaper Elevation="0" Class="bg-grey-lighten-4 pa-3 rounded mt-1 mb-3">
+                    <MudText Typo="Typo.body2" Style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">
+                        @_story.FullDescription
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudDivider Class="my-2"/>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Действия</MudText>
+                <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
+                    @if (_isAuthor)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" 
+                                   Href="@($"/stories/{_story.Id}/edit")"
+                                   StartIcon="@Icons.Material.Outlined.Edit">
+                            Редактировать
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" 
+                                   OnClick="DeleteStory"
+                                   StartIcon="@Icons.Material.Outlined.Delete">
+                            Удалить
+                        </MudButton>
+                    }
+                    <MudIconButton 
+                        Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                        Color="@(_isFavorited ? Color.Error : Color.Default)"
+                        Size="Size.Medium"
+                        OnClick="ToggleFavorite"
+                        Title="Добавить в избранное"/>
+                </MudStack>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudDivider Class="my-2"/>
+            </MudItem>
+            
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Оценка рассказа</MudText>
+                <MudStack Direction="Direction.Row" Spacing="3" AlignItems="AlignItems.Center" Class="mt-1">
+                    <MudStack Direction="Direction.Row" Spacing="1" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Outlined.ThumbUp" Size="Size.Small" Color="Color.Success"/>
+                        <MudText Typo="Typo.body1">@_likeCount</MudText>
+                    </MudStack>
+                    <MudStack Direction="Direction.Row" Spacing="1" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Outlined.ThumbDown" Size="Size.Small" Color="Color.Error"/>
+                        <MudText Typo="Typo.body1">@_dislikeCount</MudText>
+                    </MudStack>
+                </MudStack>
+            </MudItem>
+            
+            @if (_currentUser != null)
             {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" 
-                           Href=@($"/stories/{_story.Id}/edit")>✏️ Редактировать</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Error" 
-                           OnClick="DeleteStory">🗑️ Удалить</MudButton>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Ваше мнение</MudText>
+                    <MudStack Direction="Direction.Row" Spacing="2" Class="mt-1">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Outlined.ThumbUp"
+                                   OnClick="@(() => ToggleStoryLike(true))">
+                            Нравится
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Outlined.ThumbDown"
+                                   OnClick="@(() => ToggleStoryLike(false))">
+                            Не нравится
+                        </MudButton>
+                    </MudStack>
+                </MudItem>
             }
-            @if (_currentUser != null && !_isAuthor)
-            {
-                <MudIconButton 
-                    Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
-                    Color="@(_isFavorited ? Color.Error : Color.Default)"
-                    OnClick="ToggleFavorite"
-                    Title="Добавить в избранное"/>
-            }
-        </MudStack>
-        
-        <MudDivider Class="my-4"/>
-        
-        <MudText Typo="Typo.h6">👍 @_likeCount 👎 @_dislikeCount</MudText>
-        <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
-            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
-                       OnClick="@(() => ToggleStoryLike(true))">👍</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small"
-                       OnClick="@(() => ToggleStoryLike(false))">👎</MudButton>
-        </MudStack>
+        </MudGrid>
     </MudPaper>
 
-    <!-- Отзывы -->
-    <MudText Typo="Typo.h5" Class="mb-4">💬 Отзывы (@_reviews.Count)</MudText>
+    <MudText Typo="Typo.h6" Class="mb-4">💬 Отзывы (@_reviews.Count)</MudText>
     
     @if (_currentUser != null)
     {
         <MudPaper Elevation="1" Class="pa-4 mb-4">
-            <MudTextField T="string" @bind-Value="_newReviewText" Label="Ваш отзыв" 
-                          Lines="3" Variant="Variant.Outlined" FullWidth="true"
-                          HelperText="Минимум 1 символ"/>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Напишите свой отзыв</MudText>
+            <MudTextField T="string" @bind-Value="_newReviewText" 
+                          Label="Текст отзыва" 
+                          Lines="3" 
+                          Variant="Variant.Outlined" 
+                          FullWidth="true"/>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" 
-                       OnClick="AddReview" Class="mt-2" Disabled="string.IsNullOrWhiteSpace(_newReviewText)">
+                       OnClick="AddReview" 
+                       Class="mt-3"
+                       Disabled="string.IsNullOrWhiteSpace(_newReviewText)"
+                       StartIcon="@Icons.Material.Filled.Send">
                 Отправить
             </MudButton>
         </MudPaper>
@@ -75,49 +145,75 @@ else
     
     @foreach (var review in _reviews)
     {
-        <MudPaper Elevation="1" Class="pa-4 mb-2">
-            <MudStack Direction="Direction.Row" Justify="Justify.SpaceBetween">
-                <MudText Typo="Typo.subtitle2">
-                    <strong>@review.Author?.UserName</strong> • @review.DateOfCreation:
-                </MudText>
-                @if (_currentUser != null && review.AuthorId == _currentUser.Id)
-                {
-                    <MudStack Direction="Direction.Row" Spacing="1">
-                        <MudButton  Variant="Variant.Filled" Color="Color.Primary" 
-                                   OnClick="@(() => StartEditReview(review))">Редактировать</MudButton>
-                        <MudButton Variant="Variant.Filled"
-                                       Color="Color.Error" OnClick="@(() => DeleteReview(review.Id))">Удалить</MudButton>
-                    </MudStack>
-                }
-            </MudStack>
+        <MudPaper Elevation="1" Class="pa-4 mb-3">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Текст отзыва</MudText>
+            <MudText Typo="Typo.body2" Class="mt-1 mb-3" Style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;">
+                @review.Text
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Автор и дата</MudText>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                @review.Author?.UserName • @review.DateOfCreation.ToString("dd.MM.yyyy HH:mm")
+            </MudText>
+            
+            @if (_currentUser != null && review.AuthorId == _currentUser.Id)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Управление отзывом</MudText>
+                <MudStack Direction="Direction.Row" Spacing="2" Class="mt-1 mb-3">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Outlined.Edit"
+                               OnClick="@(() => StartEditReview(review))">
+                        Редактировать
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                               StartIcon="@Icons.Material.Outlined.Delete"
+                               OnClick="@(() => DeleteReview(review.Id))">
+                        Удалить
+                    </MudButton>
+                </MudStack>
+            }
             
             @if (_editingReviewId == review.Id)
             {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">Редактирование</MudText>
                 <MudTextField T="string" @bind-Value="_editingReviewText" 
-                              Lines="3" Variant="Variant.Outlined" FullWidth="true" Class="mt-2"/>
+                              Lines="3" Variant="Variant.Outlined" FullWidth="true" Class="mt-1"/>
                 <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
                     <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
-                               OnClick="@(() => SaveEditedReview(review.Id))">Сохранить</MudButton>
+                               OnClick="@(() => SaveEditedReview(review.Id))">
+                        Сохранить
+                    </MudButton>
                     <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Default"
-                               OnClick="CancelEditReview">Отмена</MudButton>
+                               OnClick="CancelEditReview">
+                        Отмена
+                    </MudButton>
                 </MudStack>
             }
-            else
-            {
-                <MudText Class="mt-2">@review.Text</MudText>
-            }
             
-            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                👍 @review.Likes?.Count(l => l.IsLiked) | 👎 @review.Likes?.Count(l => !l.IsLiked)
-            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">Оценка отзыва</MudText>
+            <MudStack Direction="Direction.Row" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                <MudStack Direction="Direction.Row" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Outlined.ThumbUp" Size="Size.Small" Color="Color.Success"/>
+                    <MudText Typo="Typo.body2">@review.Likes?.Count(l => l.IsLiked)</MudText>
+                </MudStack>
+                <MudStack Direction="Direction.Row" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Outlined.ThumbDown" Size="Size.Small" Color="Color.Error"/>
+                    <MudText Typo="Typo.body2">@review.Likes?.Count(l => !l.IsLiked)</MudText>
+                </MudStack>
+            </MudStack>
             
             @if (_currentUser != null)
             {
-                <MudStack Direction="Direction.Row" Spacing="1" Class="mt-2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" 
-                               OnClick="@(() => ToggleReviewLike(review.Id, true))">👍</MudButton>
-                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Small" 
-                               OnClick="@(() => ToggleReviewLike(review.Id, false))">👎</MudButton>
+                <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small"
+                               StartIcon="@Icons.Material.Outlined.ThumbUp"
+                               OnClick="@(() => ToggleReviewLike(review.Id, true))">
+                        Нравится
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                               StartIcon="@Icons.Material.Outlined.ThumbDown"
+                               OnClick="@(() => ToggleReviewLike(review.Id, false))">
+                        Не нравится
+                    </MudButton>
                 </MudStack>
             }
         </MudPaper>
@@ -146,13 +242,6 @@ else
         if (_story == null) return;
         
         _reviews = await ReviewService.GetReviewsByStoryIdAsync(StoryId);
-        // Сортировка: лайкнутые пользователем выше
-        if (_currentUser != null)
-        {
-            _reviews = _reviews.OrderByDescending(r => 
-                r.Likes?.Any(l => l.UserId == _currentUser.Id && l.IsLiked) == true ? 1 : 0)
-                .ThenByDescending(r => r.DateOfCreation).ToList();
-        }
         
         _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
         _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
@@ -181,6 +270,7 @@ else
         await StoryService.ToggleStoryLikeAsync(_currentUser.Id, StoryId, isLiked);
         _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
         _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
+        StateHasChanged();
     }
 
     private async Task AddReview()
@@ -191,10 +281,12 @@ else
         {
             StoryId = StoryId,
             AuthorId = _currentUser.Id,
-            Text = _newReviewText
+            Text = _newReviewText,
+            DateOfCreation = DateTime.UtcNow
         });
         _newReviewText = string.Empty;
         await LoadDataAsync();
+        StateHasChanged();
     }
 
     private async Task ToggleReviewLike(int reviewId, bool isLiked)
@@ -202,6 +294,7 @@ else
         if (_currentUser == null) return;
         await ReviewService.ToggleReviewLikeAsync(_currentUser.Id, reviewId, isLiked);
         await LoadDataAsync();
+        StateHasChanged();
     }
 
     private async Task DeleteReview(int reviewId)
@@ -209,6 +302,7 @@ else
         if (_currentUser == null) return;
         await ReviewService.DeleteReviewAsync(reviewId, _currentUser.Id);
         await LoadDataAsync();
+        StateHasChanged();
     }
 
     private void StartEditReview(Review review)
@@ -223,6 +317,7 @@ else
         await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText }, _currentUser?.Id);
         CancelEditReview();
         await LoadDataAsync();
+        StateHasChanged();
     }
 
     private void CancelEditReview()
@@ -235,7 +330,7 @@ else
     {
         if (_story != null && _isAuthor)
         {
-            await StoryService.DeleteStoryAsync(_story.Id, _currentUser.Id);
+            await StoryService.DeleteStoryAsync(_story.Id, _currentUser!.Id);
             NavigationManager.NavigateTo("/stories");
         }
     }
