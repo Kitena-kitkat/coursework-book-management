@@ -1,0 +1,51 @@
+﻿@using BookManagement.Models
+
+<MudCard Elevation="3" Class="d-flex flex-column" Style="height: 100%;">
+    <MudCardHeader Class="pb-0">
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6" Class="font-weight-bold text-truncate" 
+                     Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                @Story.BookName
+            </MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="text-truncate">
+                ✍️ @Story.Author?.UserName
+            </MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            @if (ShowFavoriteButton)
+            {
+                <MudIconButton 
+                    Icon="@(IsFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                    Color="@(IsFavorited ? Color.Error : Color.Default)"
+                    OnClick="@(() => OnToggleFavorite.InvokeAsync(Story.Id))"
+                    Size="Size.Small"/>
+            }
+        </CardHeaderActions>
+    </MudCardHeader>
+    
+    <MudCardContent Class="flex-grow-1">
+        <MudText Typo="Typo.body2" 
+                 Class="mb-2"
+                 Style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;">
+            @Story.ShortDescription
+        </MudText>
+    </MudCardContent>
+    
+    <MudCardActions Class="pt-0 mt-auto">
+        <MudRating Size="Size.Small" 
+                   SelectedValue="@Story.BookRating"
+                   ReadOnly="true"
+                   Class="mr-auto"/>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                   Href="@($"/stories/{Story.Id}")">
+            Подробнее →
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter] public Story Story { get; set; } = default!;
+    [Parameter] public bool IsFavorited { get; set; }
+    [Parameter] public EventCallback<int> OnToggleFavorite { get; set; }
+    [Parameter] public bool ShowFavoriteButton { get; set; } = true;
+}

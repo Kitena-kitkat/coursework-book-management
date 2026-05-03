@@ -22,32 +22,11 @@ else
         @foreach (var story in _stories)
         {
             <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="3">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@story.BookName</MudText>
-                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">
-                                Автор: @story.Author?.UserName
-                            </MudText>
-                        </CardHeaderContent>
-                        <CardHeaderActions>
-                            <MudIconButton Icon="Icons.Material.Filled.Favorite" 
-                                           Color="Color.Error"
-                                           OnClick="@(() => RemoveFromFavorites(story.Id))"
-                                           Title="Убрать из избранного"/>
-                        </CardHeaderActions>
-                    </MudCardHeader>
-                    
-                    <MudCardContent>
-                        <MudText>@story.ShortDescription</MudText>
-                        <MudRating Size="Size.Small" ReadOnly="true" Value="@story.BookRating"/>
-                    </MudCardContent>
-                    
-                    <MudCardActions>
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" 
-                                   Href=@($"/stories/{story.Id}")>Подробности</MudButton>
-                    </MudCardActions>
-                </MudCard>
+                <StoryCard 
+                    Story="story"
+                    IsFavorited="true"
+                    OnToggleFavorite="RemoveFromFavorites"
+                    ShowFavoriteButton="true"/>
             </MudItem>
         }
     </MudGrid>
@@ -55,15 +34,16 @@ else
 
 @code {
     private List<Story> _stories = new();
+    private string _currentUserId = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
         
-        if (!string.IsNullOrEmpty(userId))
+        if (!string.IsNullOrEmpty(_currentUserId))
         {
-            var favIds = await StoryService.GetFavoriteStoryIdsAsync(userId);
+            var favIds = await StoryService.GetFavoriteStoryIdsAsync(_currentUserId);
             var allStories = await StoryService.GetAllStoriesAsync();
             _stories = allStories.Where(s => favIds.Contains(s.Id)).ToList();
         }
@@ -71,14 +51,9 @@ else
 
     private async Task RemoveFromFavorites(int storyId)
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        
-        if (!string.IsNullOrEmpty(userId))
-        {
-            await StoryService.ToggleFavoriteAsync(userId, storyId);
-            _stories.RemoveAll(s => s.Id == storyId);
-            StateHasChanged();
-        }
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+        await StoryService.ToggleFavoriteAsync(_currentUserId, storyId);
+        _stories.RemoveAll(s => s.Id == storyId);
+        StateHasChanged();
     }
 }

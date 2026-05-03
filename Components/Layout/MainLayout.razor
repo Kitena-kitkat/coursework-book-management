@@ -10,10 +10,17 @@
 
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
         <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/stories" Style="color: white;">
             📚 BookStories
         </MudButton>
+        
+        @if (_currentUser != null)
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/favorites" Style="color: white;">
+                ⭐ Избранное
+            </MudButton>
+        }
+        
         <MudSpacer/>
 
         @if (_currentUser != null)
