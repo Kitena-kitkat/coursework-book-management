@@ -87,6 +87,12 @@ app.MapGet("/api/login", async (
     }
 });
 
+app.MapGet("/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/login");
+});
+
 app.MapRazorComponents<BookManagement.Components.App>()
     .AddInteractiveServerRenderMode();
 

@@ -43,9 +43,9 @@ else
         finally { _isLoading = false; StateHasChanged(); }
     }
 
-    private async Task HandleLogout()
+    // ✅ ИСПРАВЛЕНО: forceLoad: true + редирект на эндпоинт
+    private void HandleLogout()
     {
-        await SignInManager.SignOutAsync();
-        NavigationManager.NavigateTo("/login", forceLoad: true);
+        NavigationManager.NavigateTo("/logout", forceLoad: true);
     }
 }
