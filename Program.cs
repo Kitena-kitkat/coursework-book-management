@@ -65,6 +65,8 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/", () => Results.Redirect("/stories"));
+
 app.MapGet("/api/login", async (
     string email,
     string password,
