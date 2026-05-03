@@ -14,11 +14,14 @@
         <CardHeaderActions>
             @if (ShowFavoriteButton)
             {
-                <MudIconButton 
-                    Icon="@(IsFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
-                    Color="@(IsFavorited ? Color.Error : Color.Default)"
-                    OnClick="@(() => OnToggleFavorite.InvokeAsync(Story.Id))"
-                    Size="Size.Small"/>
+                <MudTooltip Text="@(IsFavorited ? "Убрать из избранного" : "Добавить в избранное")" Placement="Placement.Top">
+                    <MudIconButton 
+                        Icon="@(IsFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                        Color="@(IsFavorited ? Color.Error : Color.Default)"
+                        OnClick="@(() => OnToggleFavorite.InvokeAsync(Story.Id))"
+                        Size="Size.Small"/>
+                </MudTooltip>
+
             }
         </CardHeaderActions>
     </MudCardHeader>
