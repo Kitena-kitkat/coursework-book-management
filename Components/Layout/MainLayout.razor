@@ -11,7 +11,9 @@
 <MudLayout>
     <MudAppBar Elevation="1" Color="Color.Primary">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
-        <MudText Typo="Typo.h6" Class="ml-4">📚 BookStories</MudText>
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/stories" Style="color: white;">
+            📚 BookStories
+        </MudButton>
         <MudSpacer/>
 
         @if (_currentUser != null)
