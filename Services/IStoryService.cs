@@ -13,5 +13,7 @@ public interface IStoryService
     Task ToggleFavoriteAsync(string userId, int storyId);
     Task<List<int>> GetFavoriteStoryIdsAsync(string userId);
     Task<int> GetLikeCountAsync(int storyId, bool isLiked);
-    Task ToggleStoryLikeAsync(string userId, int storyId, bool isLiked);
+    Task ToggleStoryLikeAsync(string userId, int storyId, bool? isLiked);
+    Task<bool?> GetUserStoryLikeAsync(string userId, int storyId);
+    
 }

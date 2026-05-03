@@ -7,6 +7,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
+<MudPopoverProvider></MudPopoverProvider>
+
 
 @if (_story == null)
 {
@@ -57,10 +59,9 @@ else
             <MudItem xs="12">
                 <MudDivider Class="my-2"/>
             </MudItem>
-            
             <MudItem xs="12">
                 <MudText Typo="Typo.body2" Color="Color.Secondary">Действия</MudText>
-                <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
+                <div Class="d-flex align-center gap-2 mt-2">
                     @if (_isAuthor)
                     {
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary" 
@@ -74,13 +75,17 @@ else
                             Удалить
                         </MudButton>
                     }
-                    <MudIconButton 
-                        Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
-                        Color="@(_isFavorited ? Color.Error : Color.Default)"
-                        Size="Size.Medium"
-                        OnClick="ToggleFavorite"
-                        Title="Добавить в избранное"/>
-                </MudStack>
+        
+                    <div Style="display: inline-flex; align-items: center;">
+                        <MudTooltip Text="@(_isFavorited ? "Убрать из избранного" : "Добавить в избранное")" Placement="Placement.Top">
+                            <MudIconButton
+                                Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
+                                Color="@(_isFavorited ? Color.Error : Color.Default)"
+                                Size="Size.Medium"
+                                OnClick="ToggleFavorite"/>
+                        </MudTooltip>
+                    </div>
+                </div>
             </MudItem>
             
             <MudItem xs="12">
@@ -106,16 +111,25 @@ else
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Ваше мнение</MudText>
                     <MudStack Direction="Direction.Row" Spacing="2" Class="mt-1">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small"
-                                   StartIcon="@Icons.Material.Outlined.ThumbUp"
+            
+                        <!-- 👍 Лайк -->
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="@Color.Success"
+                                   Size="Size.Small"
+                                   StartIcon="@(_userStoryLike == true ? Icons.Material.Filled.ThumbUp : Icons.Material.Outlined.ThumbUp)"
                                    OnClick="@(() => ToggleStoryLike(true))">
                             Нравится
                         </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
-                                   StartIcon="@Icons.Material.Outlined.ThumbDown"
+            
+                        <!-- 👎 Дизлайк -->
+                        <MudButton Variant="Variant.Outlined" 
+                                   Color="@Color.Error"
+                                   Size="Size.Small"
+                                   StartIcon="@(_userStoryLike == false ? Icons.Material.Filled.ThumbDown : Icons.Material.Outlined.ThumbDown)"
                                    OnClick="@(() => ToggleStoryLike(false))">
                             Не нравится
                         </MudButton>
+            
                     </MudStack>
                 </MudItem>
             }
@@ -200,17 +214,22 @@ else
                     <MudText Typo="Typo.body2">@review.Likes?.Count(l => !l.IsLiked)</MudText>
                 </MudStack>
             </MudStack>
-            
+
             @if (_currentUser != null)
             {
                 <MudStack Direction="Direction.Row" Spacing="2" Class="mt-2">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small"
-                               StartIcon="@Icons.Material.Outlined.ThumbUp"
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="@Color.Success"
+                               Size="Size.Small"
+                               StartIcon="@(_userReviewLikes.GetValueOrDefault(review.Id) == true ? Icons.Material.Filled.ThumbUp : Icons.Material.Outlined.ThumbUp)"
                                OnClick="@(() => ToggleReviewLike(review.Id, true))">
                         Нравится
                     </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
-                               StartIcon="@Icons.Material.Outlined.ThumbDown"
+        
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="@Color.Error"
+                               Size="Size.Small"
+                               StartIcon="@(_userReviewLikes.GetValueOrDefault(review.Id) == false ? Icons.Material.Filled.ThumbDown : Icons.Material.Outlined.ThumbDown)"
                                OnClick="@(() => ToggleReviewLike(review.Id, false))">
                         Не нравится
                     </MudButton>
@@ -233,6 +252,9 @@ else
     private string _newReviewText = string.Empty;
     private int? _editingReviewId;
     private string _editingReviewText = string.Empty;
+    private bool? _userStoryLike;  // true = лайк, false = дизлайк, null = ничего
+    private Dictionary<int, bool?> _userReviewLikes = new();  // reviewId → like state
+
 
     protected override async Task OnInitializedAsync() => await LoadDataAsync();
 
@@ -240,20 +262,26 @@ else
     {
         _story = await StoryService.GetStoryByIdAsync(StoryId);
         if (_story == null) return;
-        
+    
         _reviews = await ReviewService.GetReviewsByStoryIdAsync(StoryId);
-        
         _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
         _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
-        
+    
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        
+    
         if (!string.IsNullOrEmpty(userId))
         {
             _currentUser = new ApplicationUser { Id = userId };
             _isAuthor = _story.UserId == userId;
             _isFavorited = await StoryService.IsFavoriteAsync(userId, StoryId);
+        
+            _userStoryLike = await StoryService.GetUserStoryLikeAsync(userId, StoryId);
+        
+            foreach (var review in _reviews)
+            {
+                _userReviewLikes[review.Id] = await ReviewService.GetUserReviewLikeAsync(userId, review.Id);
+            }
         }
     }
 
@@ -267,9 +295,16 @@ else
     private async Task ToggleStoryLike(bool isLiked)
     {
         if (_currentUser == null) return;
-        await StoryService.ToggleStoryLikeAsync(_currentUser.Id, StoryId, isLiked);
+    
+        // Если кликнули на уже активную кнопку → null (снять), иначе → новое значение
+        var newLike = (_userStoryLike == isLiked) ? (bool?)null : isLiked;
+    
+        await StoryService.ToggleStoryLikeAsync(_currentUser.Id, StoryId, newLike);
+        _userStoryLike = newLike;
+    
         _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
         _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
+    
         StateHasChanged();
     }
 
@@ -292,7 +327,13 @@ else
     private async Task ToggleReviewLike(int reviewId, bool isLiked)
     {
         if (_currentUser == null) return;
-        await ReviewService.ToggleReviewLikeAsync(_currentUser.Id, reviewId, isLiked);
+    
+        var current = _userReviewLikes.GetValueOrDefault(reviewId);
+        var newLike = (current == isLiked) ? (bool?)null : isLiked;
+    
+        await ReviewService.ToggleReviewLikeAsync(_currentUser.Id, reviewId, newLike);
+        _userReviewLikes[reviewId] = newLike;
+    
         await LoadDataAsync();
         StateHasChanged();
     }

@@ -106,23 +106,44 @@ public class StoryService : IStoryService
             .CountAsync(l => l.StoryId == storyId && l.IsLiked == isLiked);
     }
 
-    public async Task ToggleStoryLikeAsync(string userId, int storyId, bool isLiked)
+    public async Task ToggleStoryLikeAsync(string userId, int storyId, bool? isLiked)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
         var existing = await db.StoryLikes
             .FirstOrDefaultAsync(l => l.UserId == userId && l.StoryId == storyId);
-        
+    
+        if (isLiked == null)
+        {
+            // ✅ Если null → удаляем запись (снимаем лайк/дизлайк)
+            if (existing != null)
+            {
+                db.StoryLikes.Remove(existing);
+                await db.SaveChangesAsync();
+            }
+            return;
+        }
+    
         if (existing != null)
         {
             if (existing.IsLiked == isLiked)
-                db.StoryLikes.Remove(existing);
+                db.StoryLikes.Remove(existing);  // Уже такое же → удалить
             else
-                existing.IsLiked = isLiked;
+            {
+                existing.IsLiked = isLiked.Value;  // Меняем лайк ↔ дизлайк
+                db.StoryLikes.Update(existing);
+            }
         }
         else
         {
-            db.StoryLikes.Add(new StoryLike { UserId = userId, StoryId = storyId, IsLiked = isLiked });
+            db.StoryLikes.Add(new StoryLike { UserId = userId, StoryId = storyId, IsLiked = isLiked.Value });
         }
         await db.SaveChangesAsync();
+    }
+    public async Task<bool?> GetUserStoryLikeAsync(string userId, int storyId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var like = await db.StoryLikes
+            .FirstOrDefaultAsync(l => l.UserId == userId && l.StoryId == storyId);
+        return like?.IsLiked;  // true = лайк, false = дизлайк, null = нет действия
     }
 }

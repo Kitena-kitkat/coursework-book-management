@@ -48,22 +48,42 @@ public class ReviewService : IReviewService
     }
     
 
-    public async Task ToggleReviewLikeAsync(string userId, int reviewId, bool isLiked)
+    public async Task ToggleReviewLikeAsync(string userId, int reviewId, bool? isLiked)
     {
         var existing = await _db.ReviewLikes
             .FirstOrDefaultAsync(l => l.UserId == userId && l.ReviewId == reviewId);
-        
+    
+        if (isLiked == null)
+        {
+            if (existing != null)
+            {
+                _db.ReviewLikes.Remove(existing);
+                await _db.SaveChangesAsync();
+            }
+            return;
+        }
+    
         if (existing != null)
         {
             if (existing.IsLiked == isLiked)
                 _db.ReviewLikes.Remove(existing);
             else
-                existing.IsLiked = isLiked;
+            {
+                existing.IsLiked = isLiked.Value;
+                _db.ReviewLikes.Update(existing);
+            }
         }
         else
         {
-            _db.ReviewLikes.Add(new ReviewLike { UserId = userId, ReviewId = reviewId, IsLiked = isLiked });
+            _db.ReviewLikes.Add(new ReviewLike { UserId = userId, ReviewId = reviewId, IsLiked = isLiked.Value });
         }
         await _db.SaveChangesAsync();
+    }
+    
+    public async Task<bool?> GetUserReviewLikeAsync(string userId, int reviewId)
+    {
+        var like = await _db.ReviewLikes
+            .FirstOrDefaultAsync(l => l.UserId == userId && l.ReviewId == reviewId);
+        return like?.IsLiked;
     }
 }
