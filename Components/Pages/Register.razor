@@ -2,37 +2,26 @@
 @attribute [AllowAnonymous]
 @using Microsoft.AspNetCore.Identity
 @using BookManagement.Models
-@using BookManagement.Data
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
 
 <MudText Typo="Typo.h5" Class="mb-4">Регистрация</MudText>
 
-<MudForm Model="@_formModel">
-    <MudTextField @bind-Value="_formModel.Username" 
-                  Label="Имя пользователя" 
-                  Required="true"
-                  Margin="Margin.Dense"
-                  Variant="Variant.Outlined"/>
+<MudForm @ref="_form" Model="@_formModel">
+    <MudTextField T="string" @bind-Value="_formModel.UserName" 
+                  Label="Имя пользователя" Required="true"
+                  HelperText="3-50 символов"
+                  Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
     
-    <MudTextField @bind-Value="_formModel.Email" 
-                  Label="Email" 
-                  Required="true"
-                  Margin="Margin.Dense"
-                  Variant="Variant.Outlined"/>
+    <MudTextField T="string" @bind-Value="_formModel.Password" 
+                  Label="Пароль" Required="true" InputType="InputType.Password"
+                  HelperText="Минимум 6 символов"
+                  Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
     
-    <MudTextField @bind-Value="_formModel.Password" 
-                  Label="Пароль" 
-                  Required="true"
-                  InputType="InputType.Password"
-                  Margin="Margin.Dense"
-                  Variant="Variant.Outlined"/>
-    
-    <MudButton Variant="Variant.Filled" 
-               Color="Color.Primary" 
-               OnClick="HandleRegister"
-               Class="mt-4">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" 
+               OnClick="HandleRegister" Class="mt-4"
+               Loading="_isLoading" ButtonType="ButtonType.Button">
         Зарегистрироваться
     </MudButton>
     
@@ -47,41 +36,52 @@
 </MudForm>
 
 @code {
+    private MudForm _form = new();
     private RegisterFormModel _formModel = new();
     private string _error = string.Empty;
+    private bool _isLoading = false;
 
     private async Task HandleRegister()
     {
-        if (string.IsNullOrWhiteSpace(_formModel.Username) || 
-            string.IsNullOrWhiteSpace(_formModel.Password))
-        {
-            _error = "Заполните все поля";
-            return;
-        }
+        await _form.ValidateAsync();
+        if (!_form.IsValid) return;
 
-        var user = new ApplicationUser
-        {
-            UserName = _formModel.Email,
-            Email = _formModel.Email,
-            DateOfRegistration = DateTime.UtcNow
-        };
+        _isLoading = true; _error = string.Empty;
 
-        var result = await UserManager.CreateAsync(user, _formModel.Password);
+        try
+        {
+            var user = new ApplicationUser
+            {
+                UserName = _formModel.UserName,
+                Email = _formModel.UserName, // Identity требует Email, но он не используется
+                DateOfRegistration = DateTime.UtcNow
+            };
 
-        if (result.Succeeded)
-        {
-            NavigationManager.NavigateTo("/login", forceLoad: true);
+            var result = await UserManager.CreateAsync(user, _formModel.Password);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo("/login", forceLoad: true);
+            }
+            else
+            {
+                var dup = result.Errors.FirstOrDefault(e => e.Code == "DuplicateUserName");
+                _error = dup != null ? "Такое имя пользователя уже занято" 
+                                     : result.Errors.FirstOrDefault()?.Description ?? "Ошибка регистрации";
+            }
         }
-        else
-        {
-            _error = result.Errors.FirstOrDefault()?.Description ?? "Ошибка регистрации";
-        }
+        catch (Exception ex) { _error = "Ошибка: " + ex.Message; }
+        finally { _isLoading = false; }
     }
 
     private class RegisterFormModel
     {
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(50, MinimumLength = 3)]
+        public string UserName { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 6)]
         public string Password { get; set; } = string.Empty;
     }
 }

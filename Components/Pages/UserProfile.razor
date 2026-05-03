@@ -1,47 +1,46 @@
 ﻿@page "/profile"
 @attribute [Authorize]
-@using Microsoft.AspNetCore.Identity
 @using BookManagement.Models
-@using BookManagement.Data
-@inject UserManager<ApplicationUser> UserManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject NavigationManager NavigationManager
+@using BookManagement.Services
+@inject IUserService UserService
+@using Microsoft.AspNetCore.Identity
 @inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 @rendermode RenderMode.InteractiveServer
 
-<MudText Typo="Typo.h5" Class="mb-4">Профиль</MudText>
-
-@if (_user != null)
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true"/>
+}
+else if (_user != null)
 {
     <MudCard Elevation="2">
         <MudCardContent>
             <MudText Typo="Typo.subtitle1"><strong>Имя пользователя:</strong> @_user.UserName</MudText>
-            <MudText Typo="Typo.subtitle1"><strong>Email:</strong> @_user.Email</MudText>
             <MudText Typo="Typo.subtitle1"><strong>Дата регистрации:</strong> @_user.DateOfRegistration.ToString("dd.MM.yyyy HH:mm")</MudText>
         </MudCardContent>
     </MudCard>
-    
-    <MudButton Variant="Variant.Outlined" 
-               Color="Color.Error" 
-               OnClick="HandleLogout"
-               Class="mt-4">
-        Выйти
-    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="HandleLogout" Class="mt-4">Выйти</MudButton>
+}
+else
+{
+    <MudAlert Severity="Severity.Error">Не удалось загрузить профиль</MudAlert>
 }
 
 @code {
     private ApplicationUser? _user;
+    private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var claimsPrincipal = authState.User;
-
-        if (claimsPrincipal.Identity?.IsAuthenticated == true)
+        try
         {
-            var email = claimsPrincipal.Identity.Name;
-            _user = await UserManager.FindByEmailAsync(email!);
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId)) _user = await UserService.GetUserByIdAsync(userId);
         }
+        finally { _isLoading = false; StateHasChanged(); }
     }
 
     private async Task HandleLogout()

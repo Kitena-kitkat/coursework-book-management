@@ -11,8 +11,8 @@
             <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">Вход</MudText>
 
             <MudForm @ref="_form" Model="@_formModel">
-                <MudTextField @bind-Value="_formModel.Email" 
-                              Label="Email" 
+                <MudTextField @bind-Value="_formModel.UserName" 
+                              Label="Ник" 
                               Required="true"
                               Margin="Margin.Dense"
                               Variant="Variant.Outlined"
@@ -71,7 +71,7 @@
             // Выполняем полный редирект на API endpoint для установки cookie
             var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/profile";
             NavigationManager.NavigateTo(
-                $"/api/login?email={Uri.EscapeDataString(_formModel.Email)}&password={Uri.EscapeDataString(_formModel.Password)}&redirectUrl={Uri.EscapeDataString(redirectUrl)}", 
+                $"/api/login?email={Uri.EscapeDataString(_formModel.UserName)}&password={Uri.EscapeDataString(_formModel.Password)}&redirectUrl={Uri.EscapeDataString(redirectUrl)}", 
                 forceLoad: true);
         }
         catch (Exception ex)
@@ -83,7 +83,7 @@
 
     private class LoginFormModel
     {
-        public string Email { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 }
