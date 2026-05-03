@@ -3,9 +3,8 @@
 @using BookManagement.Models
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@using MudBlazor
 
-<MudThemeProvider/>
+<MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
@@ -16,11 +15,8 @@
         
         @if (_currentUser != null)
         {
-            <MudLink Href="/profile" Class="mr-4" Style="color: white;">
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Href="/profile">
                 @_currentUser.UserName
-            </MudLink>
-            <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="HandleLogout">
-                Выйти
             </MudButton>
         }
         else
