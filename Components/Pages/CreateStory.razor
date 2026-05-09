@@ -50,13 +50,17 @@
         
         <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
         
-        <MudRating @bind-SelectedValue="_formModel.BookRating"/>
+        <div class="d-flex flex-column align-center">
+            <MudRating @bind-SelectedValue="_bookRating" 
+                       HoveredValueChanged="HandleHoveredValueChanged" />
+            <MudText Typo="Typo.subtitle2" Class="deep-purple-text mt-2">@RatingLabelText</MudText>
+        </div>
         
         <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
             <MudButton Variant="Variant.Filled" 
                        Color="Color.Primary" 
                        OnClick="HandleSubmit"
-                       Disabled="@(!_isValid || _isLoading)">
+                       Disabled="@(!_isValid || _isLoading || _bookRating == 0)">
                 @if (_isLoading)
                 {
                     <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mr-2"/>
@@ -72,14 +76,31 @@
 @code {
     private MudForm _form = new();
     private CreateStoryFormModel _formModel = new();
-    private int _hoveredRating = 0;
+    private int _bookRating = 0;
+    private int? _hoveredRating;
     private bool _isValid;
     private bool _isLoading = false;
+    private void HandleHoveredValueChanged(int? val) => _hoveredRating = val;
+
+    private string RatingLabelText => (_hoveredRating ?? _bookRating) switch
+    {
+        1 => "Очень плохо",
+        2 => "Плохо",
+        3 => "Нормально",
+        4 => "Хорошо",
+        5 => "Отлично!",
+        _ => "Поставьте оценку книге"
+    };
 
     private async Task HandleSubmit()
     {
         await _form.ValidateAsync();
-        
+        _formModel.BookRating = _bookRating;
+        if (_bookRating == 0)
+        {
+            Snackbar.Add("Поставьте оценку книге", Severity.Warning);
+            return;
+        }
         if (!_isValid)
         {
             return;
@@ -103,7 +124,7 @@
                 BookName = _formModel.BookName,
                 ShortDescription = _formModel.ShortDescription,
                 FullDescription = _formModel.FullDescription,
-                BookRating = _formModel.BookRating,
+                BookRating = _bookRating,
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow
             };
