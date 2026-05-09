@@ -73,6 +73,7 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStatusCodePagesWithRedirects("/not-found");
 
 app.MapGet("/", () => Results.Redirect("/stories"));
 
