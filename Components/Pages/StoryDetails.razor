@@ -48,7 +48,7 @@ else
             
             <MudDivider Class="mb-3"/>
             
-            <MudStack Direction="Direction.Row" Spacing="4" Class="mb-3">
+            <MudStack Spacing="4" Class="mb-3">
                 <div>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Автор</MudText>
                     <MudText Typo="Typo.body2">@_story.Author?.UserName</MudText>
@@ -175,7 +175,7 @@ else
                     {
                         <MudTextField T="string" @bind-Value="_editingReviewText" 
                                       Lines="3" Variant="Variant.Outlined" FullWidth="true" Class="mb-2"/>
-                        <MudStack Direction="Direction.Row" Spacing="2">
+                        <MudStack Spacing="2">
                             <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
                                        OnClick="@(() => SaveEditedReview(review.Id))">💾 Сохранить</MudButton>
                             <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="CancelEditReview">✕ Отмена</MudButton>
@@ -190,7 +190,7 @@ else
                     
                     <MudDivider Class="my-2"/>
                     
-                    <MudStack Direction="Direction.Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start" Class="mb-2">
+                    <MudStack Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start" Class="mb-2">
                         <MudStack>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">Автор</MudText>
                             <MudText Typo="Typo.body2">@review.Author?.UserName</MudText>
@@ -376,8 +376,8 @@ else
 
     private async Task SaveEditedReview(int reviewId)
     {
-        if (string.IsNullOrWhiteSpace(_editingReviewText)) return;
-        await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText }, _currentUser?.Id);
+        if (string.IsNullOrWhiteSpace(_editingReviewText) || _currentUser is null) return;
+        await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText }, _currentUser.Id);
         Snackbar.Add("Отзыв успешно обновлен!", Severity.Success);
         CancelEditReview();
         await LoadDataAsync();

@@ -33,8 +33,7 @@ else
                           HelperText="Например: Мастер и Маргарита"
                           Margin="Margin.Dense" 
                           Variant="Variant.Outlined" 
-                          FullWidth="true"
-                          For="@(() => _formModel.BookName)"/>
+                          FullWidth="true"/>
             
             <MudTextField T="string" @bind-Value="_formModel.ShortDescription" 
                           Label="Короткое описание" 
@@ -65,12 +64,11 @@ else
             <div class="d-flex flex-column align-center">
                 <MudRating SelectedValue="@_bookRating" 
                            SelectedValueChanged="@(v => { OnRatingChanged(v); })"
-                           HoveredValueChanged="HandleHoveredValueChanged"
-                           For="@(() => _formModel.BookRating)" />
+                           HoveredValueChanged="HandleHoveredValueChanged"/>
                 <MudText Typo="Typo.subtitle2" Class="deep-purple-text mt-2">@RatingLabelText</MudText>
             </div>
             
-            <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
+            <MudStack Spacing="2" Class="mt-4">
                 <MudButton Variant="Variant.Filled" 
                            Color="Color.Primary" 
                            OnClick="HandleSubmit"

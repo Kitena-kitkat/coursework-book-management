@@ -21,7 +21,7 @@
     
     <MudButton Variant="Variant.Filled" Color="Color.Primary" 
                OnClick="HandleRegister" Class="mt-4"
-               Loading="_isLoading" ButtonType="ButtonType.Button">
+               ButtonType="ButtonType.Button">
         Зарегистрироваться
     </MudButton>
     
@@ -39,14 +39,13 @@
     private MudForm _form = new();
     private RegisterFormModel _formModel = new();
     private string _error = string.Empty;
-    private bool _isLoading = false;
 
     private async Task HandleRegister()
     {
         await _form.ValidateAsync();
         if (!_form.IsValid) return;
 
-        _isLoading = true; _error = string.Empty;
+        _error = string.Empty;
 
         try
         {
@@ -71,7 +70,6 @@
             }
         }
         catch (Exception ex) { _error = "Ошибка: " + ex.Message; }
-        finally { _isLoading = false; }
     }
 
     private class RegisterFormModel
