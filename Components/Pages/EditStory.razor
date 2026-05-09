@@ -61,13 +61,19 @@ else
             
             <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
             
-            <MudRating @bind-SelectedValue="_formModel.BookRating"/>
+            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
+
+            <div class="d-flex flex-column align-center">
+                <MudRating @bind-SelectedValue="_bookRating" 
+                           HoveredValueChanged="HandleHoveredValueChanged" />
+                <MudText Typo="Typo.subtitle2" Class="deep-purple-text mt-2">@RatingLabelText</MudText>
+            </div>
             
             <MudStack Direction="Direction.Row" Spacing="2" Class="mt-4">
                 <MudButton Variant="Variant.Filled" 
                            Color="Color.Primary" 
                            OnClick="HandleSubmit"
-                           Disabled="@(!_isValid || _isSaving)">
+                           Disabled="@(!_isValid || _isSaving || _bookRating == 0)">
                     @if (_isSaving)
                     {
                         <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mr-2"/>
@@ -91,7 +97,27 @@ else
     private bool _isSaving = false;
     private bool _isAuthor = false;
     private bool _isValid;
-    private string[] _errors = Array.Empty<string>();
+    private int _bookRating = 0;
+    private int? _hoveredRating;
+    
+    private void HandleHoveredValueChanged(int? val) => _hoveredRating = val;
+
+    private string RatingLabelText
+    {
+        get
+        {
+            int rating = _hoveredRating.HasValue ? _hoveredRating.Value : _bookRating;
+            return rating switch
+            {
+                1 => "Очень плохо",
+                2 => "Плохо",
+                3 => "Нормально",
+                4 => "Хорошо",
+                5 => "Отлично!",
+                _ => "Поставьте оценку книге"
+            };
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -106,6 +132,7 @@ else
                 FullDescription = _story.FullDescription,
                 BookRating = _story.BookRating
             };
+            _bookRating = _story.BookRating;
 
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -133,7 +160,7 @@ else
             _story.BookName = _formModel.BookName;
             _story.ShortDescription = _formModel.ShortDescription;
             _story.FullDescription = _formModel.FullDescription;
-            _story.BookRating = _formModel.BookRating;
+            _story.BookRating = _bookRating;
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             
@@ -143,20 +170,8 @@ else
                 return;
             }
             
-            var success = await StoryService.UpdateStoryAsync(_story, userId);
-            if (success)
-            {
-                NavigationManager.NavigateTo($"/stories/{_story.Id}", forceLoad: true);
-            }
-            else
-            {
-                _errors = new[] { "Ошибка при сохранении или недостаточно прав" };
-            }
+            await StoryService.UpdateStoryAsync(_story, userId);
             NavigationManager.NavigateTo($"/stories/{_story.Id}", forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            _errors = new[] { "Ошибка при сохранении: " + ex.Message };
         }
         finally
         {
