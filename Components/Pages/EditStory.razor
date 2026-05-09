@@ -59,13 +59,14 @@ else
                           Lines="6"
                           For="@(() => _formModel.FullDescription)"/>
             
-            <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
             
             <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Оценка книги</MudText>
 
             <div class="d-flex flex-column align-center">
-                <MudRating @bind-SelectedValue="_bookRating" 
-                           HoveredValueChanged="HandleHoveredValueChanged" />
+                <MudRating SelectedValue="@_bookRating" 
+                           SelectedValueChanged="@(v => { OnRatingChanged(v); })"
+                           HoveredValueChanged="HandleHoveredValueChanged"
+                           For="@(() => _formModel.BookRating)" />
                 <MudText Typo="Typo.subtitle2" Class="deep-purple-text mt-2">@RatingLabelText</MudText>
             </div>
             
@@ -101,6 +102,13 @@ else
     private int? _hoveredRating;
     
     private void HandleHoveredValueChanged(int? val) => _hoveredRating = val;
+    
+    private void OnRatingChanged(int val)
+    {
+        _bookRating = val;
+        _formModel.BookRating = val;
+        _form.ValidateAsync(); // Триггерим валидацию формы
+    }
 
     private string RatingLabelText
     {
