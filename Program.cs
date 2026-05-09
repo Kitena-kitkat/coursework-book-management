@@ -5,6 +5,7 @@ using BookManagement.Data;
 using BookManagement.Models;
 using BookManagement.Services;
 using MudBlazor;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,26 +76,27 @@ app.UseAuthorization();
 
 app.MapGet("/", () => Results.Redirect("/stories"));
 
-app.MapGet("/api/login", async (
-    string email,
-    string password,
-    string redirectUrl,
-    SignInManager<ApplicationUser> signInManager) =>
+app.MapPost("/api/login", async (
+    [FromForm] string UserName,
+    [FromForm] string Password,
+    SignInManager<ApplicationUser> signInManager,
+    HttpContext context) =>
 {
     var result = await signInManager.PasswordSignInAsync(
-        email, 
-        password, 
+        UserName, 
+        Password, 
         isPersistent: false, 
         lockoutOnFailure: false);
 
     if (result.Succeeded)
     {
-        return Results.Redirect(redirectUrl ?? "/profile");
+        // Редирект на /stories
+        context.Response.Redirect("/stories");
+        return;
     }
-    else
-    {
-        return Results.Redirect($"/login?error=invalid&returnUrl={Uri.EscapeDataString(redirectUrl)}");
-    }
+    
+    // Редирект обратно на логин с ошибкой
+    context.Response.Redirect("/login?error=" + Uri.EscapeDataString("Неверный ник или пароль"));
 });
 
 app.MapGet("/logout", async (SignInManager<ApplicationUser> signInManager) =>
@@ -107,3 +109,4 @@ app.MapRazorComponents<BookManagement.Components.App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+public record LoginRequest(string UserName, string Password, string? ReturnUrl);

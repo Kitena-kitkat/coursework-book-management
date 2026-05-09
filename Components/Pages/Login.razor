@@ -1,8 +1,5 @@
 ﻿@page "/login"
 @attribute [AllowAnonymous]
-@using Microsoft.AspNetCore.Identity
-@using BookManagement.Models
-@inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
 
 <MudGrid Justify="Justify.Center" Class="mt-8">
@@ -10,80 +7,49 @@
         <MudPaper Elevation="3" Class="pa-6">
             <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-4">Вход</MudText>
 
-            <MudForm @ref="_form" Model="@_formModel">
-                <MudTextField @bind-Value="_formModel.UserName" 
-                              Label="Ник" 
-                              Required="true"
-                              Margin="Margin.Dense"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"/>
-                
-                <MudTextField @bind-Value="_formModel.Password" 
-                              Label="Пароль" 
-                              Required="true"
-                              InputType="InputType.Password"
-                              Margin="Margin.Dense"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"/>
-                
-                <MudButton Variant="Variant.Filled" 
-                           Color="Color.Primary" 
-                           OnClick="HandleLogin"
-                           FullWidth="true"
-                           Class="mt-4"
-                           Loading="_isLoading">
+            <form method="post" action="/api/login">
+                <AntiforgeryToken />
+
+                <MudTextField T="string" @bind-Value="_userName"
+                              Label="Ник" Required="true" Name="UserName"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
+
+                <MudTextField T="string" @bind-Value="_password"
+                              Label="Пароль" Required="true" InputType="InputType.Password" Name="Password"
+                              Margin="Margin.Dense" Variant="Variant.Outlined" FullWidth="true"/>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           ButtonType="ButtonType.Submit"
+                           FullWidth="true" Class="mt-4">
                     Войти
                 </MudButton>
-                
-                <MudText Class="mt-4" Align="Align.Center">
-                    Нет аккаунта? <MudLink Href="/register">Зарегистрироваться</MudLink>
-                </MudText>
-                
-                @if (!string.IsNullOrEmpty(_error))
-                {
-                    <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert>
-                }
-            </MudForm>
+            </form>
+            
+            <MudText Class="mt-4" Align="Align.Center">
+                Нет аккаунта? <MudLink Href="/register">Зарегистрироваться</MudLink>
+            </MudText>
+            
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert>
+            }
         </MudPaper>
     </MudItem>
 </MudGrid>
 
 @code {
-    private MudForm _form = new();
-    private LoginFormModel _formModel = new();
-    private string _error = string.Empty;
-    private bool _isLoading = false;
+    private string _userName = string.Empty;
+    private string _password = string.Empty;
     
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? ReturnUrl { get; set; }
+    [Parameter] [SupplyParameterFromQuery] public string? error { get; set; }
 
-    private async Task HandleLogin()
+    protected override void OnInitialized()
     {
-        await _form.ValidateAsync();
-        if (!_form.IsValid) return;
-
-        _isLoading = true;
-        _error = string.Empty;
-
-        try
+        if (!string.IsNullOrEmpty(error))
         {
-            // Выполняем полный редирект на API endpoint для установки cookie
-            var redirectUrl = !string.IsNullOrEmpty(ReturnUrl) ? ReturnUrl : "/profile";
-            NavigationManager.NavigateTo(
-                $"/api/login?email={Uri.EscapeDataString(_formModel.UserName)}&password={Uri.EscapeDataString(_formModel.Password)}&redirectUrl={Uri.EscapeDataString(redirectUrl)}", 
-                forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            _error = "Ошибка: " + ex.Message;
-            _isLoading = false;
+            _error = error;
         }
     }
 
-    private class LoginFormModel
-    {
-        public string UserName { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
+    private string? _error;
 }
