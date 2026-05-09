@@ -7,8 +7,11 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @rendermode RenderMode.InteractiveServer
-<MudPopoverProvider></MudPopoverProvider>
+
+<MudSnackbarProvider/>
+<MudPopoverProvider/>
 <MudDialogProvider/>
 
 @if (_story == null)
@@ -18,11 +21,9 @@
 }
 else
 {
-    <!-- 📚 Карточка рассказа -->
     <MudCard Elevation="2" Class="mb-4">
         <MudCardContent Class="pb-1">
             
-            <!-- Заголовок + меню автора (шестерёнки строго справа) -->
             <div class="d-flex justify-space-between align-start w-100 mb-3">
                 <div>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Книга</MudText>
@@ -30,22 +31,23 @@ else
                 </div>
                 @if (_isAuthor)
                 {
-                    <MudMenu Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Color="Color.Primary">
-                        <MudMenuItem Href=@($"/stories/{_story.Id}/edit")>
-                            <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"/>
-                            <MudText Class="ml-2">Редактировать</MudText>
-                        </MudMenuItem>
-                        <MudMenuItem OnClick="ConfirmDeleteStory">
-                            <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
-                            <MudText Class="ml-2" Color="Color.Error">Удалить</MudText>
-                        </MudMenuItem>
-                    </MudMenu>
+                    <MudTooltip Text="Управление" Placement="Placement.Top">
+                        <MudMenu Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Color="Color.Primary">
+                            <MudMenuItem Href=@($"/stories/{_story.Id}/edit")>
+                                <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"/>
+                                <MudText Class="ml-2">Редактировать</MudText>
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="ConfirmDeleteStory">
+                                <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
+                                <MudText Class="ml-2" Color="Color.Error">Удалить</MudText>
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTooltip>
                 }
             </div>
             
             <MudDivider Class="mb-3"/>
             
-            <!-- Автор + дата -->
             <MudStack Direction="Direction.Row" Spacing="4" Class="mb-3">
                 <div>
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Автор</MudText>
@@ -59,47 +61,43 @@ else
             
             <MudDivider Class="mb-3"/>
             
-            <!-- Рейтинг -->
             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Оценка книги</MudText>
             <MudRating Size="Size.Small" ReadOnly="true" SelectedValue="@_story.BookRating" Class="mb-3"/>
             
             <MudDivider Class="mb-3"/>
             
-            <!-- Краткое описание -->
             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Коротко</MudText>
             <MudText Typo="Typo.body2" Class="mb-3" Style="white-space: pre-wrap; word-wrap: break-word;">@_story.ShortDescription</MudText>
             
-            <!-- Полное описание -->
             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Подробно</MudText>
             <MudText Typo="Typo.body2" Style="white-space: pre-wrap; word-wrap: break-word;">@_story.FullDescription</MudText>
             
             <MudDivider Class="my-3"/>
             
-            <!-- Избранное + лайки (в одну строку) -->
-            <!-- Избранное + лайки (в одну строку) -->
-            <!-- ✅ Компактная строка: 👍 👎 ❤️ -->
-            <!-- Избранное + лайки (в одну строку) -->
-            <!-- ✅ Компактная строка: 👍 👎 ❤️ (гарантированно в ряд) -->
             <div class="d-flex align-center flex-nowrap mt-2" style="gap: 6px;">
                 @if (_currentUser != null)
                 {
-                    <!-- 👍 Лайк -->
-                    <MudButton Variant="Variant.Text" Size="Size.Small"
-                               OnClick="@(() => ToggleStoryLike(true))"
-                               StartIcon="@GetStoryLikeIcon()"
-                               Color="@GetStoryLikeColor()"
-                               Style="min-width: 0; padding: 0 4px;">
-                        @_likeCount
-                    </MudButton>
-
+                    <MudTooltip Text="Рассказ нравится" Placement="Placement.Top">
+                        <MudButton Variant="Variant.Text" Size="Size.Small"
+                                   OnClick="@(() => ToggleStoryLike(true))"
+                                   StartIcon="@GetStoryLikeIcon()"
+                                   Color="@GetStoryLikeColor()"
+                                   Style="min-width: 0; padding: 0 4px;">
+                            @_likeCount
+                        </MudButton>
+                    </MudTooltip>
                     <!-- 👎 Дизлайк -->
-                    <MudButton Variant="Variant.Text" Size="Size.Small"
-                               OnClick="@(() => ToggleStoryLike(false))"
-                               StartIcon="@GetStoryDislikeIcon()"
-                               Color="@GetStoryDislikeColor()"
-                               Style="min-width: 0; padding: 0 4px;">
-                        @_dislikeCount
-                    </MudButton>
+                    <MudTooltip Text="Рассказ не нравится" Placement="Placement.Top">
+                        <MudButton Variant="Variant.Text" Size="Size.Small"
+                                   OnClick="@(() => ToggleStoryLike(false))"
+                                   StartIcon="@GetStoryDislikeIcon()"
+                                   Color="@GetStoryDislikeColor()"
+                                   Style="min-width: 0; padding: 0 4px;">
+                            @_dislikeCount
+                        </MudButton>
+                    </MudTooltip>
+
+
 
                     <!-- ❤️ Избранное -->
                     <MudTooltip Text="@(_isFavorited ? "Убрать из избранного" : "В избранное")" Placement="Placement.Top">
@@ -123,10 +121,8 @@ else
         </MudCardContent>
     </MudCard>
 
-    <!-- 💬 Отзывы -->
     <MudText Typo="Typo.h6" Class="mb-3">Отзывы (@_reviews.Count)</MudText>
     
-    <!-- Форма нового отзыва -->
     @if (_currentUser != null)
     {
         <MudCard Elevation="1" Class="mb-4">
@@ -136,14 +132,13 @@ else
                               Variant="Variant.Outlined" FullWidth="true"/>
                 <MudButton Variant="Variant.Filled" Size="Size.Small" 
                            OnClick="AddReview" Class="mt-2"
-                           Disabled="@string.IsNullOrWhiteSpace(_newReviewText)">
+                           Disabled="@string.IsNullOrWhiteSpace(_newReviewText)" Color="Color.Primary">
                     Отправить
                 </MudButton>
             </MudCardContent>
         </MudCard>
     }
     
-    <!-- Список отзывов -->
     @if (_reviews.Count == 0)
     {
         <MudAlert Severity="Severity.Info">Пока нет отзывов</MudAlert>
@@ -155,23 +150,24 @@ else
             <MudCard Elevation="1" Class="mb-3">
                 <MudCardContent Class="pb-1">
                     
-                    <!-- Отзыв + три точки (без лишнего отступа, строго вверху справа) -->
                     <div class="d-flex justify-space-between align-start mb-1">
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Отзыв</MudText>
                         
                         @if (review.AuthorId == _currentUser?.Id)
                         {
-                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Color="Color.Primary"
-                                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                                <MudMenuItem OnClick="@(() => StartEditReview(review))">
-                                    <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"/>
-                                    <MudText Class="ml-2">Редактировать</MudText>
-                                </MudMenuItem>
-                                <MudMenuItem OnClick="@(() => ConfirmDeleteReview(review.Id))">
-                                    <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
-                                    <MudText Class="ml-2" Color="Color.Error">Удалить</MudText>
-                                </MudMenuItem>
-                            </MudMenu>
+                            <MudTooltip Text="Управление" Placement="Placement.Top">
+                                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Color="Color.Primary"
+                                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                    <MudMenuItem OnClick="@(() => StartEditReview(review))">
+                                        <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Color="Color.Primary"/>
+                                        <MudText Class="ml-2">Редактировать</MudText>
+                                    </MudMenuItem>
+                                    <MudMenuItem OnClick="@(() => ConfirmDeleteReview(review.Id))">
+                                        <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
+                                        <MudText Class="ml-2" Color="Color.Error">Удалить</MudText>
+                                    </MudMenuItem>
+                                </MudMenu>
+                            </MudTooltip>
                         }
                     </div>
                     
@@ -194,7 +190,6 @@ else
                     
                     <MudDivider Class="my-2"/>
                     
-                    <!-- Автор + дата -->
                     <MudStack Direction="Direction.Row" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start" Class="mb-2">
                         <MudStack>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">Автор</MudText>
@@ -208,25 +203,29 @@ else
                     
                     <MudDivider Class="my-2"/>
                     
-                    <!-- Лайки отзыва (в одну строку) -->
                     <div class="d-flex align-center flex-nowrap mt-2" style="gap: 6px;">
                         @if (_currentUser != null)
                         {
-                            <MudButton Variant="Variant.Text" Size="Size.Small"
-                                       OnClick="@(() => ToggleReviewLike(review.Id, true))"
-                                       StartIcon="@GetReviewLikeIcon(review.Id)"
-                                       Color="@GetReviewLikeColor(review.Id)"
-                                       Style="min-width: 0; padding: 0 4px;">
-                                @(review.Likes?.Count(l => l.IsLiked) ?? 0)
-                            </MudButton>
-        
-                            <MudButton Variant="Variant.Text" Size="Size.Small"
-                                       OnClick="@(() => ToggleReviewLike(review.Id, false))"
-                                       StartIcon="@GetReviewDislikeIcon(review.Id)"
-                                       Color="@GetReviewDislikeColor(review.Id)"
-                                       Style="min-width: 0; padding: 0 4px;">
-                                @(review.Likes?.Count(l => !l.IsLiked) ?? 0)
-                            </MudButton>
+                            <MudTooltip Text="Отзыв нравится" Placement="Placement.Top">
+                                <MudButton Variant="Variant.Text" Size="Size.Small"
+                                           OnClick="@(() => ToggleReviewLike(review.Id, true))"
+                                           StartIcon="@GetReviewLikeIcon(review.Id)"
+                                           Color="@GetReviewLikeColor(review.Id)"
+                                           Style="min-width: 0; padding: 0 4px;">
+                                    @(review.Likes?.Count(l => l.IsLiked) ?? 0)
+                                </MudButton>
+                            </MudTooltip>
+
+                            <MudTooltip Text="Отзыв не нравится" Placement="Placement.Top">
+                                <MudButton Variant="Variant.Text" Size="Size.Small"
+                                           OnClick="@(() => ToggleReviewLike(review.Id, false))"
+                                           StartIcon="@GetReviewDislikeIcon(review.Id)"
+                                           Color="@GetReviewDislikeColor(review.Id)"
+                                           Style="min-width: 0; padding: 0 4px;">
+                                    @(review.Likes?.Count(l => !l.IsLiked) ?? 0)
+                                </MudButton>
+                            </MudTooltip>
+
                         }
                         else
                         {
@@ -286,55 +285,84 @@ else
         StateHasChanged();
     }
 
-    // === Визуальные хелперы для лайков рассказа ===
     private string GetStoryLikeIcon() => _userStoryLike == true ? Icons.Material.Filled.ThumbUp : Icons.Material.Outlined.ThumbUp;
     private Color GetStoryLikeColor() => _userStoryLike == true ? Color.Primary : Color.Default;
     private string GetStoryDislikeIcon() => _userStoryLike == false ? Icons.Material.Filled.ThumbDown : Icons.Material.Outlined.ThumbDown;
     private Color GetStoryDislikeColor() => _userStoryLike == false ? Color.Error : Color.Default;
 
-    // === Визуальные хелперы для лайков отзыва ===
     private string GetReviewLikeIcon(int id) => _userReviewLikes.GetValueOrDefault(id) == true ? Icons.Material.Filled.ThumbUp : Icons.Material.Outlined.ThumbUp;
     private Color GetReviewLikeColor(int id) => _userReviewLikes.GetValueOrDefault(id) == true ? Color.Primary : Color.Default;
     private string GetReviewDislikeIcon(int id) => _userReviewLikes.GetValueOrDefault(id) == false ? Icons.Material.Filled.ThumbDown : Icons.Material.Outlined.ThumbDown;
     private Color GetReviewDislikeColor(int id) => _userReviewLikes.GetValueOrDefault(id) == false ? Color.Error : Color.Default;
 
-    // === Лайки рассказа ===
     private async Task ToggleStoryLike(bool isLiked)
     {
         if (_currentUser == null) return;
         var newLike = (_userStoryLike == isLiked) ? (bool?)null : isLiked;
         await StoryService.ToggleStoryLikeAsync(_currentUser.Id, StoryId, newLike);
+        if (newLike is true)
+        {
+            Snackbar.Add("Вы поставили лайк рассказу", Severity.Success);
+        }
+
+        else if (newLike is false)
+        {
+            Snackbar.Add("Вы поставили дизлайк рассказу", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add("Вы убрали свою оценку рассказу");
+        }
         _userStoryLike = newLike;
         _likeCount = await StoryService.GetLikeCountAsync(StoryId, true);
         _dislikeCount = await StoryService.GetLikeCountAsync(StoryId, false);
         StateHasChanged();
     }
 
-    // === Лайки отзыва ===
     private async Task ToggleReviewLike(int reviewId, bool isLiked)
     {
         if (_currentUser == null) return;
         var current = _userReviewLikes.GetValueOrDefault(reviewId);
         var newLike = (current == isLiked) ? (bool?)null : isLiked;
+        if (newLike is true)
+        {
+            Snackbar.Add("Вы поставили лайк отзыву", Severity.Success);
+        }
+
+        else if (newLike is false)
+        {
+            Snackbar.Add("Вы поставили дизлайк отзыву", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add("Вы убрали свою оценку отзыву");
+        }
         await ReviewService.ToggleReviewLikeAsync(_currentUser.Id, reviewId, newLike);
         _userReviewLikes[reviewId] = newLike;
         await LoadDataAsync();
     }
 
-    // === Избранное ===
     private async Task ToggleFavorite()
     {
         if (_currentUser == null) { NavigationManager.NavigateTo("/login", forceLoad: true); return; }
         await StoryService.ToggleFavoriteAsync(_currentUser.Id, StoryId);
+        if (_isFavorited)
+        {
+            Snackbar.Add("Рассказ успешно удален из избранного", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add("Рассказ успешно добавлен в избранное", Severity.Success);
+        }
         _isFavorited = !_isFavorited;
         StateHasChanged();
     }
 
-    // === Отзывы ===
     private async Task AddReview()
     {
         if (_currentUser == null || string.IsNullOrWhiteSpace(_newReviewText)) return;
         await ReviewService.CreateReviewAsync(new Review { StoryId = StoryId, AuthorId = _currentUser.Id, Text = _newReviewText, DateOfCreation = DateTime.UtcNow });
+        Snackbar.Add("Отзыв успешно добавлен!", Severity.Success);
         _newReviewText = string.Empty;
         await LoadDataAsync();
     }
@@ -350,6 +378,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(_editingReviewText)) return;
         await ReviewService.UpdateReviewAsync(new Review { Id = reviewId, Text = _editingReviewText }, _currentUser?.Id);
+        Snackbar.Add("Отзыв успешно обновлен!", Severity.Success);
         CancelEditReview();
         await LoadDataAsync();
     }
@@ -361,7 +390,6 @@ else
         StateHasChanged();
     }
 
-    // === Удаление с подтверждением (модальное окно) ===
     private async Task ConfirmDeleteStory()
     {
         var result = await DialogService.ShowMessageBoxAsync(
@@ -388,6 +416,7 @@ else
         if (result == true && _currentUser != null)
         {
             await ReviewService.DeleteReviewAsync(reviewId, _currentUser.Id);
+            Snackbar.Add("Отзыв успешно удален", Severity.Success);
             await LoadDataAsync();
         }
     }

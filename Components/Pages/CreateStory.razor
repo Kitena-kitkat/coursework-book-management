@@ -7,6 +7,9 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
+@inject ISnackbar Snackbar
+<MudSnackbarProvider/>
+
 
 <MudText Typo="Typo.h4" Class="mb-4">📝 Рассказать о книге</MudText>
 
@@ -119,11 +122,12 @@
             };
 
             await StoryService.CreateStoryAsync(story);
+            Snackbar.Add("Рассказ успешно создан!", Severity.Success);
             NavigationManager.NavigateTo($"/stories/{story.Id}", forceLoad: true);
         }
         catch (Exception)
         {
-            // Можно добавить обработку ошибок
+            Snackbar.Add("Произошла ошибка!", Severity.Error);
         }
         finally
         {
@@ -146,6 +150,6 @@
         public string FullDescription { get; set; } = string.Empty;
 
         [Range(1, 5, ErrorMessage = "Оценка должна быть от 1 до 5")]
-        public int BookRating { get; set; } = 5;
+        public int BookRating { get; set; } = 1;
     }
 }

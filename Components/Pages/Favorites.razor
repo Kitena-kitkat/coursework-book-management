@@ -6,6 +6,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
+@inject ISnackbar Snackbar
+<MudSnackbarProvider/>
 
 
 <MudPopoverProvider></MudPopoverProvider>
@@ -55,6 +57,7 @@ else
     {
         if (string.IsNullOrEmpty(_currentUserId)) return;
         await StoryService.ToggleFavoriteAsync(_currentUserId, storyId);
+        Snackbar.Add("Рассказ удалён из избранного", Severity.Info);
         _stories.RemoveAll(s => s.Id == storyId);
         StateHasChanged();
     }

@@ -43,7 +43,6 @@ else
         finally { _isLoading = false; StateHasChanged(); }
     }
 
-    // ✅ ИСПРАВЛЕНО: forceLoad: true + редирект на эндпоинт
     private void HandleLogout()
     {
         NavigationManager.NavigateTo("/logout", forceLoad: true);
