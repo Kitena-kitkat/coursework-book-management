@@ -35,6 +35,10 @@ public class StoryService : IStoryService
 
     public async Task<Story> CreateStoryAsync(Story story)
     {
+        if (story.BookRating > 5 || story.BookRating < 1)
+        {
+            throw new ArgumentException("Рейтинг должен быть от 1 до 5");
+        }
         await using var db = await _dbFactory.CreateDbContextAsync();
         db.Stories.Add(story);
         await db.SaveChangesAsync();
@@ -114,7 +118,7 @@ public class StoryService : IStoryService
     
         if (isLiked == null)
         {
-            // ✅ Если null → удаляем запись (снимаем лайк/дизлайк)
+            // Если null → удаляем запись (снимаем лайк/дизлайк)
             if (existing != null)
             {
                 db.StoryLikes.Remove(existing);
@@ -129,7 +133,7 @@ public class StoryService : IStoryService
                 db.StoryLikes.Remove(existing);  // Уже такое же → удалить
             else
             {
-                existing.IsLiked = isLiked.Value;  // Меняем лайк ↔ дизлайк
+                existing.IsLiked = isLiked.Value;  // Меняем лайк или дизлайк
                 db.StoryLikes.Update(existing);
             }
         }

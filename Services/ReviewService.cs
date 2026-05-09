@@ -28,7 +28,6 @@ public class ReviewService : IReviewService
     public async Task<Review> CreateReviewAsync(Review review)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        review.DateOfCreation = DateTime.UtcNow;
         db.Reviews.Add(review);
         await db.SaveChangesAsync();
         return review;
