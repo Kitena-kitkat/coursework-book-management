@@ -6,9 +6,11 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @rendermode RenderMode.InteractiveServer
-
+@inject ISnackbar Snackbar
 
 <MudPopoverProvider></MudPopoverProvider>
+<MudSnackbarProvider/>
+
 <MudText Typo="Typo.h4" Class="mb-4">📖 Все рассказы</MudText>
 
 <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/stories/create" Class="mb-4">
@@ -67,11 +69,17 @@ else
         }
         
         await StoryService.ToggleFavoriteAsync(userId, storyId);
-        
+
         if (_favorites.Contains(storyId))
+        {
             _favorites.Remove(storyId);
+            Snackbar.Add("Рассказ успешно удален из избранного", Severity.Info);
+        }
         else
+        {
             _favorites.Add(storyId);
+            Snackbar.Add("Рассказ успешно добавлен в избранное", Severity.Success);
+        }
         
         StateHasChanged();
     }
