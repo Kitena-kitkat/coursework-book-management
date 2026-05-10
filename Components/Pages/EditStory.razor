@@ -33,7 +33,8 @@ else
                           HelperText="Например: Мастер и Маргарита"
                           Margin="Margin.Dense" 
                           Variant="Variant.Outlined" 
-                          FullWidth="true"/>
+                          FullWidth="true"
+                          For="@(() => _formModel.BookName)"/>
             
             <MudTextField T="string" @bind-Value="_formModel.ShortDescription" 
                           Label="Короткое описание" 
