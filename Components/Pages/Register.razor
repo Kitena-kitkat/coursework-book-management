@@ -52,8 +52,7 @@
             var user = new ApplicationUser
             {
                 UserName = _formModel.UserName,
-                Email = _formModel.UserName, // Identity требует Email, но он не используется
-                DateOfRegistration = DateTime.UtcNow
+                Email = _formModel.UserName, // Для совместимости с другими инструментами, можно искать по Email
             };
 
             var result = await UserManager.CreateAsync(user, _formModel.Password);
