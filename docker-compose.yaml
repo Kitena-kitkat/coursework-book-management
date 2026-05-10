@@ -1,6 +1,6 @@
 ﻿services:
   book-reviews:
-    build: .
+    image: kitenakitkat/book-reviews-app:latest
     ports: 
       - "8000:8000"
     environment: 

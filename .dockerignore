@@ -1,0 +1,14 @@
+﻿**/bin
+**/obj
+
+/docs
+*.md
+
+**/.idea
+**/.vs
+**/.vscode
+
+**/.git
+.gitignore
+
+/bookdb
