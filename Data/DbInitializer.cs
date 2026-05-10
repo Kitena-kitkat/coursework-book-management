@@ -31,124 +31,105 @@ public static class DbInitializer
     }
 
     private static async Task SeedDataAsync(ApplicationDbContext context, IServiceProvider services)
+{
+    if (await context.Users.AnyAsync())
+        return;
+
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // 5 пользователей
+    var user1 = new ApplicationUser { UserName = "reader1", Email = "reader1@example.com", DateOfRegistration = DateTime.UtcNow.AddDays(-30) };
+    await userManager.CreateAsync(user1, "password123");
+
+    var user2 = new ApplicationUser { UserName = "booklover", Email = "booklover@example.com", DateOfRegistration = DateTime.UtcNow.AddDays(-25) };
+    await userManager.CreateAsync(user2, "password123");
+
+    var user3 = new ApplicationUser { UserName = "litfan", Email = "litfan@example.com", DateOfRegistration = DateTime.UtcNow.AddDays(-20) };
+    await userManager.CreateAsync(user3, "password123");
+
+    var user4 = new ApplicationUser { UserName = "critic", Email = "critic@example.com", DateOfRegistration = DateTime.UtcNow.AddDays(-15) };
+    await userManager.CreateAsync(user4, "password123");
+
+    var user5 = new ApplicationUser { UserName = "bookworm", Email = "bookworm@example.com", DateOfRegistration = DateTime.UtcNow.AddDays(-7) };
+    await userManager.CreateAsync(user5, "password123");
+
+    var stories = new List<Story>
     {
-        // Если уже есть данные - выходим
-        if (await context.Users.AnyAsync())
-            return;
+        new() { BookName = "Мастер и Маргарита", ShortDescription = "Мистический роман о добре и зле, любви и творчестве", FullDescription = "Однажды в Москве появляется загадочный иностранец Воланд со своей свитой. Он оказывается самим дьяволом, прибывшим на ежегодный бал. В это же время развивается история любви Мастера и Маргариты.", BookRating = 1, UserId = user1.Id, CreatedAt = DateTime.UtcNow.AddDays(-20) },
+        new() { BookName = "Преступление и наказание", ShortDescription = "Психологический роман о природе преступления и муках совести", FullDescription = "Бедный студент Раскольников решается на убийство старухи-процентщицы. После преступления начинается его тяжёлый путь к раскаянию. Достоевский исследует психологию преступника.", BookRating = 3, UserId = user1.Id, CreatedAt = DateTime.UtcNow.AddDays(-17) },
+        new() { BookName = "Три товарища", ShortDescription = "История дружбы и любви в послевоенной Германии", FullDescription = "Три друга работают в авторемонтной мастерской. Робби влюбляется в Пат. Роман показывает жизнь «потерянного поколения» в Германии 1920-х годов.", BookRating = 4, UserId = user2.Id, CreatedAt = DateTime.UtcNow.AddDays(-14) },
+        new() { BookName = "1984", ShortDescription = "Антиутопия о тотальном контроле государства над личностью", FullDescription = "В мире, где Большой Брат следит за каждым, Уинстон Смит пытается сохранить свободу мысли. Он ведёт тайный дневник и влюбляется в Джулию.", BookRating = 5, UserId = user3.Id, CreatedAt = DateTime.UtcNow.AddDays(-10) },
+        new() { BookName = "Маленький принц", ShortDescription = "Философская сказка о самом главном в жизни", FullDescription = "Лётчик встречает в пустыне маленького мальчика с другой планеты. Маленький принц рассказывает о своём путешествии. «Самого главного глазами не увидишь — зорко одно лишь сердце».", BookRating = 5, UserId = user2.Id, CreatedAt = DateTime.UtcNow.AddDays(-5) }
+    };
 
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    await context.Stories.AddRangeAsync(stories);
+    await context.SaveChangesAsync();
 
-        // Создаём тестовых пользователей
-        var user1 = new ApplicationUser
-        {
-            UserName = "reader1",
-            Email = "reader1@example.com",
-            DateOfRegistration = DateTime.UtcNow.AddDays(-30)
-        };
-        await userManager.CreateAsync(user1, "password123");
+    var reviews = new List<Review>
+    {
 
-        var user2 = new ApplicationUser
-        {
-            UserName = "booklover",
-            Email = "booklover@example.com",
-            DateOfRegistration = DateTime.UtcNow.AddDays(-15)
-        };
-        await userManager.CreateAsync(user2, "password123");
+        new() { StoryId = stories[1].Id, AuthorId = user2.Id, Text = "Достоевский — гений! Отличный анализ.", DateOfCreation = DateTime.UtcNow.AddDays(-15) },
+        new() { StoryId = stories[1].Id, AuthorId = user4.Id, Text = "Раскольников — один из самых глубоких персонажей.", DateOfCreation = DateTime.UtcNow.AddDays(-12) },
+        new() { StoryId = stories[1].Id, AuthorId = user5.Id, Text = "Читал три раза, каждый раз нахожу новое.", DateOfCreation = DateTime.UtcNow.AddDays(-8) },
 
-        // Создаём тестовые рассказы
-        var stories = new List<Story>
-        {
-            new()
-            {
-                BookName = "Мастер и Маргарита",
-                ShortDescription = "Мистический роман о добре и зле, любви и творчестве",
-                FullDescription = "Однажды весной в Москве появляется загадочный иностранец Воланд со своей свитой. " +
-                                  "Он оказывается самим дьяволом, прибывшим на ежегодный бал. В это же время развивается " +
-                                  "история любви Мастера и Маргариты. Роман поражает глубиной философских размышлений " +
-                                  "и сатирическим изображением московского общества 1930-х годов.",
-                BookRating = 5,
-                UserId = user1.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-20)
-            },
-            new()
-            {
-                BookName = "Преступление и наказание",
-                ShortDescription = "Психологический роман о природе преступления и муках совести",
-                FullDescription = "Бедный студент Родион Раскольников решается на убийство старухи-процентщицы, " +
-                                  "считая себя «право имеющим». После преступления начинается его тяжёлый путь " +
-                                  "к раскаянию. Достоевский мастерски исследует психологию преступника и показывает, " +
-                                  "что настоящее наказание — это муки совести.",
-                BookRating = 5,
-                UserId = user1.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-15)
-            },
-            new()
-            {
-                BookName = "Три товарища",
-                ShortDescription = "История дружбы и любви в послевоенной Германии",
-                FullDescription = "Три друга — Робби, Кестер и Ленц — работают в авторемонтной мастерской. " +
-                                  "Робби влюбляется в Пат, девушку из богатой семьи. Роман показывает жизнь " +
-                                  "«потерянного поколения» в Германии 1920-х годов. Это невероятно трогательная " +
-                                  "история о дружбе, любви и ценности каждого мгновения жизни.",
-                BookRating = 4,
-                UserId = user2.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-10)
-            },
-            new()
-            {
-                BookName = "1984",
-                ShortDescription = "Антиутопия о тотальном контроле государства над личностью",
-                FullDescription = "В мире, где Большой Брат следит за каждым, Уинстон Смит пытается сохранить " +
-                                  "человечность и свободу мысли. Он ведёт тайный дневник и влюбляется в Джулию. " +
-                                  "Но Партия не прощает инакомыслия... Книга-предупреждение, которая остаётся " +
-                                  "актуальной и сегодня.",
-                BookRating = 5,
-                UserId = user2.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-5)
-            },
-            new()
-            {
-                BookName = "Маленький принц",
-                ShortDescription = "Философская сказка о самом главном в жизни",
-                FullDescription = "Лётчик встречает в пустыне маленького мальчика с другой планеты. " +
-                                  "Маленький принц рассказывает о своём путешествии и встречах с разными людьми. " +
-                                  "Эта книга напоминает, что «самого главного глазами не увидишь — зорко одно лишь сердце».",
-                BookRating = 5,
-                UserId = user1.Id,
-                CreatedAt = DateTime.UtcNow.AddDays(-2)
-            }
-        };
+        new() { StoryId = stories[2].Id, AuthorId = user1.Id, Text = "Ремарк прекрасен. Одна из лучших книг о дружбе.", DateOfCreation = DateTime.UtcNow.AddDays(-12) },
+        new() { StoryId = stories[2].Id, AuthorId = user3.Id, Text = "Очень трогательная история.", DateOfCreation = DateTime.UtcNow.AddDays(-9) },
 
-        await context.Stories.AddRangeAsync(stories);
-        await context.SaveChangesAsync();
+        new() { StoryId = stories[3].Id, AuthorId = user1.Id, Text = "1984 актуален как никогда!", DateOfCreation = DateTime.UtcNow.AddDays(-8) },
+        new() { StoryId = stories[3].Id, AuthorId = user2.Id, Text = "Оруэлл предвидел многое. Жутко читать.", DateOfCreation = DateTime.UtcNow.AddDays(-6) },
 
-        // Создаём отзывы
-        var reviews = new List<Review>
-        {
-            new()
-            {
-                StoryId = stories[0].Id,
-                AuthorId = user2.Id,
-                Text = "Отличный обзор! Тоже люблю этот роман. Особенно впечатлила сцена бала у Воланда.",
-                DateOfCreation = DateTime.UtcNow.AddDays(-18)
-            },
-            new()
-            {
-                StoryId = stories[1].Id,
-                AuthorId = user2.Id,
-                Text = "Достоевский — гений психологического романа. Отличный анализ!",
-                DateOfCreation = DateTime.UtcNow.AddDays(-12)
-            },
-            new()
-            {
-                StoryId = stories[2].Id,
-                AuthorId = user1.Id,
-                Text = "Ремарк прекрасен. «Три товарища» — одна из лучших книг о дружбе.",
-                DateOfCreation = DateTime.UtcNow.AddDays(-8)
-            }
-        };
+        new() { StoryId = stories[4].Id, AuthorId = user1.Id, Text = "Маленький принц — книга на все времена.", DateOfCreation = DateTime.UtcNow.AddDays(-4) },
+        new() { StoryId = stories[4].Id, AuthorId = user3.Id, Text = "Читаю детям. Учит любви и дружбе.", DateOfCreation = DateTime.UtcNow.AddDays(-3) },
+        new() { StoryId = stories[4].Id, AuthorId = user5.Id, Text = "Самое главное — глазами не увидишь.", DateOfCreation = DateTime.UtcNow.AddDays(-1) }
+    };
 
-        await context.Reviews.AddRangeAsync(reviews);
-        await context.SaveChangesAsync();
-    }
+    await context.Reviews.AddRangeAsync(reviews);
+    await context.SaveChangesAsync();
+    
+    var storyLikes = new List<StoryLike>
+    {
+        new() { StoryId = stories[1].Id, UserId = user2.Id, IsLiked = true },
+        new() { StoryId = stories[1].Id, UserId = user3.Id, IsLiked = true },
+        new() { StoryId = stories[1].Id, UserId = user4.Id, IsLiked = true },
+        
+        new() { StoryId = stories[3].Id, UserId = user1.Id, IsLiked = true },
+        new() { StoryId = stories[3].Id, UserId = user2.Id, IsLiked = true },
+        new() { StoryId = stories[3].Id, UserId = user4.Id, IsLiked = true },
+        new() { StoryId = stories[3].Id, UserId = user5.Id, IsLiked = false },
+        
+        new() { StoryId = stories[4].Id, UserId = user2.Id, IsLiked = true },
+        new() { StoryId = stories[4].Id, UserId = user3.Id, IsLiked = true },
+        new() { StoryId = stories[4].Id, UserId = user4.Id, IsLiked = false },
+        new() { StoryId = stories[4].Id, UserId = user5.Id, IsLiked = true },
+    };
+
+    await context.StoryLikes.AddRangeAsync(storyLikes);
+    await context.SaveChangesAsync();
+
+    var reviewLikes = new List<ReviewLike>
+    {
+        new() { ReviewId = reviews[0].Id, UserId = user1.Id, IsLiked = true },
+        new() { ReviewId = reviews[0].Id, UserId = user3.Id, IsLiked = true },
+        new() { ReviewId = reviews[1].Id, UserId = user1.Id, IsLiked = true },
+        new() { ReviewId = reviews[2].Id, UserId = user5.Id, IsLiked = true },
+        
+        new() { ReviewId = reviews[3].Id, UserId = user1.Id, IsLiked = true },
+        new() { ReviewId = reviews[3].Id, UserId = user3.Id, IsLiked = true },
+        new() { ReviewId = reviews[4].Id, UserId = user2.Id, IsLiked = true },
+        new() { ReviewId = reviews[5].Id, UserId = user4.Id, IsLiked = true },
+        
+        new() { ReviewId = reviews[6].Id, UserId = user2.Id, IsLiked = true },
+        new() { ReviewId = reviews[7].Id, UserId = user4.Id, IsLiked = true },
+        
+        new() { ReviewId = reviews[8].Id, UserId = user3.Id, IsLiked = false },
+        new() { ReviewId = reviews[8].Id, UserId = user5.Id, IsLiked = true },
+        
+        new() { ReviewId = reviews[9].Id, UserId = user2.Id, IsLiked = true },
+        new() { ReviewId = reviews[9].Id, UserId = user4.Id, IsLiked = false },
+        new() { ReviewId = reviews[9].Id, UserId = user1.Id, IsLiked = true }
+    };
+
+    await context.ReviewLikes.AddRangeAsync(reviewLikes);
+    await context.SaveChangesAsync();
+}
 }
