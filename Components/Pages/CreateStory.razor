@@ -29,7 +29,6 @@
                       Label="Короткое описание" 
                       Required="true" 
                       RequiredError="Введите короткое описание"
-                      Counter="200"
                       HelperText="2-3 предложения о вашем впечатлении"
                       Margin="Margin.Dense" 
                       Variant="Variant.Outlined" 
@@ -95,7 +94,6 @@
     private async Task HandleSubmit()
     {
         await _form.ValidateAsync();
-        _formModel.BookRating = _bookRating;
         if (!_isValid)
         {
             return;
@@ -121,7 +119,6 @@
                 FullDescription = _formModel.FullDescription,
                 BookRating = _bookRating,
                 UserId = userId,
-                CreatedAt = DateTime.UtcNow
             };
 
             await StoryService.CreateStoryAsync(story);
@@ -151,8 +148,5 @@
         [Required(ErrorMessage = "Обязательное поле")]
         [StringLength(5000, MinimumLength = 50, ErrorMessage = "Подробное описание должно быть от 50 до 5000 символов")]
         public string FullDescription { get; set; } = string.Empty;
-
-        [Range(1, 5, ErrorMessage = "Оценка должна быть от 1 до 5")]
-        public int BookRating { get; set; } = 1;
     }
 }
