@@ -1,4 +1,15 @@
 ﻿services:
+  book-reviews:
+    build: .
+    ports: 
+      - "8000:8000"
+    environment: 
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    
   postgres:
     image: postgres:18.3-alpine
     volumes:
