@@ -54,29 +54,35 @@ app.UseAuthorization();
 app.UseAntiforgery();
 app.UseStatusCodePagesWithRedirects("/not-found");
 
+// Главная страница приложения — сразу перенаправляем на список историй.
 app.MapGet("/", () => Results.Redirect("/stories"));
 
+// Обрабатывает вход пользователя по имени и паролю.
 app.MapPost("/api/login", async (
-    [FromForm] string UserName,
-    [FromForm] string Password,
+    [FromForm] string userName,
+    [FromForm] string password,
     SignInManager<ApplicationUser> signInManager,
     HttpContext context) =>
 {
+    // Пытаемся выполнить вход.
     var result = await signInManager.PasswordSignInAsync(
-        UserName, 
-        Password, 
+        userName, 
+        password, 
         isPersistent: false, 
         lockoutOnFailure: false);
 
     if (result.Succeeded)
     {
+        // Если вход успешен, отправляем пользователя на страницу историй.
         context.Response.Redirect("/stories");
         return;
     }
     
+    // Если вход не удался, возвращаем на страницу входа с сообщением об ошибке.
     context.Response.Redirect("/login?error=" + Uri.EscapeDataString("Неверный ник или пароль"));
 });
 
+// Завершает текущую сессию пользователя и возвращает его на страницу входа.
 app.MapGet("/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
@@ -87,7 +93,6 @@ app.MapRazorComponents<BookManagement.Components.App>()
     .AddInteractiveServerRenderMode();
 
 
-// Применяем миграции и заполняем БД при каждом запуске
 await DbInitializer.InitializeAsync(app);
 
 app.Run();
