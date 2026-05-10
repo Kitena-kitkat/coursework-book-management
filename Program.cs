@@ -86,4 +86,8 @@ app.MapGet("/logout", async (SignInManager<ApplicationUser> signInManager) =>
 app.MapRazorComponents<BookManagement.Components.App>()
     .AddInteractiveServerRenderMode();
 
+
+// Применяем миграции и заполняем БД при каждом запуске
+await DbInitializer.InitializeAsync(app);
+
 app.Run();
