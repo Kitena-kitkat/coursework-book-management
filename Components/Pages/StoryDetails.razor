@@ -86,7 +86,6 @@ else
                             @_likeCount
                         </MudButton>
                     </MudTooltip>
-                    <!-- 👎 Дизлайк -->
                     <MudTooltip Text="Рассказ не нравится" Placement="Placement.Top">
                         <MudButton Variant="Variant.Text" Size="Size.Small"
                                    OnClick="@(() => ToggleStoryLike(false))"
@@ -97,9 +96,6 @@ else
                         </MudButton>
                     </MudTooltip>
 
-
-
-                    <!-- ❤️ Избранное -->
                     <MudTooltip Text="@(_isFavorited ? "Убрать из избранного" : "В избранное")" Placement="Placement.Top">
                         <MudIconButton 
                             Icon="@(_isFavorited ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.Favorite)"
@@ -361,7 +357,7 @@ else
     private async Task AddReview()
     {
         if (_currentUser == null || string.IsNullOrWhiteSpace(_newReviewText)) return;
-        await ReviewService.CreateReviewAsync(new Review { StoryId = StoryId, AuthorId = _currentUser.Id, Text = _newReviewText, DateOfCreation = DateTime.UtcNow });
+        await ReviewService.CreateReviewAsync(new Review { StoryId = StoryId, AuthorId = _currentUser.Id, Text = _newReviewText, });
         Snackbar.Add("Отзыв успешно добавлен!", Severity.Success);
         _newReviewText = string.Empty;
         await LoadDataAsync();
